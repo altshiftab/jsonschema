@@ -1,0 +1,83 @@
+{
+    "name": "core",
+    "description": "JSON draft2020-12 schema core vocabulary",
+    "prefix": 1,
+    "keywords": [
+	{
+	    "name": "$vocabulary",
+	    "argType": "any",
+	    "alwaysValid": true,
+	    "skipBuilder": true,
+	    "after": [
+    	    	"$schema"
+	    ]
+	},
+	{
+	    "name": "$id",
+	    "argType": "string",
+	    "alwaysValid": true,
+	    "skipBuilder": true,
+	    "after": [
+    	    	"$schema"
+	    ]
+	},
+	{
+	    "name": "$anchor",
+	    "argType": "string",
+	    "alwaysValid": true,
+	    "skipBuilder": true,
+	    "after": [
+		"$id",
+    	    	"$schema"
+	    ]
+	},
+	{
+	    "name": "$dynamicAnchor",
+	    "argType": "string",
+	    "alwaysValid": true,
+	    "skipBuilder": true,
+	    "after": [
+		"$id",
+    	    	"$schema"
+	    ]
+	},
+	{
+	    "name": "$ref",
+	    "argType": "string",
+	    "validator": "validateRef",
+	    "skipBuilder": true,
+	    "after": [
+		"$id",
+    	    	"$schema"
+	    ]
+	},
+	{
+	    "name": "$dynamicRef",
+	    "argType": "string",
+	    "validator": "validateDynamicRef",
+	    "skipBuilder": true,
+	    "after": [
+		"$id",
+    	    	"$schema"
+	    ]
+	},
+	{
+	    "name": "$defs",
+	    "argType": "mapSchema",
+	    "alwaysValid": true,
+	    "skipBuilder": true,
+	    "after": [
+		"$id",
+    	    	"$schema"
+	    ]
+	},
+	{
+	    "name": "$comment",
+	    "argType": "string",
+	    "alwaysValid": true,
+	    "after": [
+    	    	"$schema"
+	    ]
+	}
+    ]
+}

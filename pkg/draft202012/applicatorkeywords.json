@@ -1,0 +1,245 @@
+{
+    "name": "applicator",
+    "description": "JSON draft2020-12 standard schema vocabulary",
+    "keywords": [
+	{
+	    "name": "allOf",
+	    "argType": "schemas"
+	},
+	{
+	    "name": "anyOf",
+	    "argType": "schemas"
+	},
+	{
+	    "name": "oneOf",
+	    "argType": "schemas"
+	},
+	{
+	    "name": "not",
+	    "argType": "schema"
+	},
+	{
+	    "name": "if",
+	    "argType": "schema"
+	},
+	{
+	    "name": "then",
+	    "argType": "schema",
+	    "after": [
+		"if"
+	    ]
+	},
+	{
+	    "name": "else",
+	    "argType": "schema",
+	    "after": [
+		"if",
+		"then"
+	    ]
+	},
+	{
+	    "name": "dependentSchemas",
+	    "argType": "mapSchema"
+	},
+	{
+	    "name": "prefixItems",
+	    "argType": "schemas"
+	},
+	{
+	    "name": "items",
+	    "argType": "schema",
+	    "after": [
+		"prefixItems"
+	    ]
+	},
+	{
+	    "name": "contains",
+	    "argType": "schema"
+	},
+	{
+	    "name": "properties",
+	    "argType": "mapSchema"
+	},
+	{
+	    "name": "patternProperties",
+	    "argType": "mapSchema"
+	},
+	{
+	    "name": "additionalProperties",
+	    "argType": "schema",
+	    "after": [
+		"properties",
+		"patternProperties"
+	    ]
+	},
+	{
+	    "name": "propertyNames",
+	    "argType": "schema"
+	},
+	{
+	    "name": "unevaluatedItems",
+	    "argType": "schema",
+	    "after": [
+		"prefixItems",
+		"items",
+		"contains"
+	    ]
+	},
+	{
+	    "name": "unevaluatedProperties",
+	    "argType": "schema",
+	    "after": [
+		"properties",
+		"patternProperties",
+		"additionalProperties",
+		"allOf",
+		"anyOf",
+		"oneOf",
+		"not"
+	    ]
+	},
+	{
+	    "name": "type",
+	    "argType": "stringOrStrings"
+	},
+	{
+	    "name": "enum",
+	    "argType": "any"
+	},
+	{
+	    "name": "const",
+	    "argType": "any"
+	},
+	{
+	    "name": "multipleOf",
+	    "argType": "float"
+	},
+	{
+	    "name": "maximum",
+	    "argType": "float"
+	},
+	{
+	    "name": "exclusiveMaximum",
+	    "argType": "float"
+	},
+	{
+	    "name": "minimum",
+	    "argType": "float"
+	},
+	{
+	    "name": "exclusiveMinimum",
+	    "argType": "float"
+	},
+	{
+	    "name": "maxLength",
+	    "argType": "int"
+	},
+	{
+	    "name": "minLength",
+	    "argType": "int"
+	},
+	{
+	    "name": "pattern",
+	    "argType": "string"
+	},
+	{
+	    "name": "maxItems",
+	    "argType": "int"
+	},
+	{
+	    "name": "minItems",
+	    "argType": "int"
+	},
+	{
+	    "name": "uniqueItems",
+	    "argType": "bool"
+	},
+	{
+	    "name": "maxContains",
+	    "argType": "int",
+	    "after": [
+		"contains"
+	    ]
+	},
+	{
+	    "name": "minContains",
+	    "argType": "int",
+	    "after": [
+		"contains"
+	    ]
+	},
+	{
+	    "name": "maxProperties",
+	    "argType": "int"
+	},
+	{
+	    "name": "minProperties",
+	    "argType": "int"
+	},
+	{
+	    "name": "required",
+	    "argType": "strings"
+	},
+	{
+	    "name": "dependentRequired",
+	    "argType": "any"
+	},
+	{
+	    "name": "format",
+	    "argType": "string"
+	},
+	{
+	    "name": "contentEncoding",
+	    "argType": "string",
+	    "alwaysValid": true
+	},
+	{
+	    "name": "contentMediaType",
+	    "argType": "string",
+	    "alwaysValid": true
+	},
+	{
+	    "name": "contentSchema",
+	    "argType": "schema",
+	    "alwaysValid": true
+	},
+	{
+	    "name": "title",
+	    "argType": "string",
+	    "alwaysValid": true
+	},
+	{
+	    "name": "description",
+	    "argType": "string",
+	    "alwaysValid": true
+	},
+	{
+	    "name": "default",
+	    "argType": "any"
+	},
+	{
+	    "name": "deprecated",
+	    "argType": "bool",
+	    "alwaysValid": true
+	},
+	{
+	    "name": "readOnly",
+	    "argType": "bool",
+	    "alwaysValid": true
+	},
+	{
+	    "name": "writeOnly",
+	    "argType": "bool",
+	    "alwaysValid": true
+	},
+	{
+	    "name": "examples",
+	    "argType": "any",
+	    "alwaysValid": true
+	},
+	{
+	    "name": "dependencies",
+	    "argType": "mapArrayOrSchema"
+	}
+    ]
+}
