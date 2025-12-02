@@ -24,7 +24,8 @@ import (
 	"time"
 
 	"github.com/altshiftab/jsonschema/internal/argtype"
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/arg_type"
+	"github.com/altshiftab/jsonschema/pkg/types/schema"
 )
 
 // Builder is a JSON schema builder.
@@ -37,18 +38,18 @@ import (
 // via $ref or $dynamicRef. Similarly there is no way to define anchors
 // via $anchor, $dynamicAnchor, or $defs.
 type Builder struct {
-	s types.Schema
-	v *types.Vocabulary
+	s schema.Schema
+	v *schema.Vocabulary
 }
 
 // New returns a new [Builder] to build a [*types.Schema]
 // described by the [*types.Vocabulary] v.
-func New(v *types.Vocabulary) *Builder {
+func New(v *schema.Vocabulary) *Builder {
 	return &Builder{v: v}
 }
 
 // Build builds and returns the [*jsonschema.Schema].
-func (b *Builder) Build() *types.Schema {
+func (b *Builder) Build() *schema.Schema {
 	s := b.s
 	s.Finalize(b.v)
 	return &s
@@ -61,64 +62,64 @@ func (b *Builder) NewBuilder() *Builder {
 
 // AddBool adds a keyword whose argument is a bool.
 // This panics if the keyword does not expect a bool.
-func (b *Builder) AddBool(keyword *types.Keyword, v bool) *Builder {
-	b.check(keyword, types.ArgTypeBool)
-	b.s.Parts = append(b.s.Parts, types.MakePart(keyword, types.PartBool(v)))
+func (b *Builder) AddBool(keyword *schema.Keyword, v bool) *Builder {
+	b.check(keyword, arg_type.ArgTypeBool)
+	b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartBool(v)))
 	return b
 }
 
 // AddString adds a keyword whose argument is a string.
-func (b *Builder) AddString(keyword *types.Keyword, s string) *Builder {
-	if keyword.ArgType == types.ArgTypeStringOrStrings {
-		b.s.Parts = append(b.s.Parts, types.MakePart(keyword, types.PartStringOrStrings{String: s}))
+func (b *Builder) AddString(keyword *schema.Keyword, s string) *Builder {
+	if keyword.ArgType == arg_type.ArgTypeStringOrStrings {
+		b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartStringOrStrings{String: s}))
 	} else {
-		b.check(keyword, types.ArgTypeString)
-		b.s.Parts = append(b.s.Parts, types.MakePart(keyword, types.PartString(s)))
+		b.check(keyword, arg_type.ArgTypeString)
+		b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartString(s)))
 	}
 	return b
 }
 
 // AddStrings adds a keyword whose argument is an array of strings.
-func (b *Builder) AddStrings(keyword *types.Keyword, s []string) *Builder {
-	if keyword.ArgType == types.ArgTypeStringOrStrings {
-		b.s.Parts = append(b.s.Parts, types.MakePart(keyword, types.PartStringOrStrings{Strings: s}))
+func (b *Builder) AddStrings(keyword *schema.Keyword, s []string) *Builder {
+	if keyword.ArgType == arg_type.ArgTypeStringOrStrings {
+		b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartStringOrStrings{Strings: s}))
 	} else {
-		b.check(keyword, types.ArgTypeStrings)
-		b.s.Parts = append(b.s.Parts, types.MakePart(keyword, types.PartStrings(s)))
+		b.check(keyword, arg_type.ArgTypeStrings)
+		b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartStrings(s)))
 	}
 	return b
 }
 
 // AddInt adds a keyword whose argument is an int.
-func (b *Builder) AddInt(keyword *types.Keyword, i int64) *Builder {
-	b.check(keyword, types.ArgTypeInt)
-	b.s.Parts = append(b.s.Parts, types.MakePart(keyword, types.PartInt(i)))
+func (b *Builder) AddInt(keyword *schema.Keyword, i int64) *Builder {
+	b.check(keyword, arg_type.ArgTypeInt)
+	b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartInt(i)))
 	return b
 }
 
 // AddFloat adds a keyword whose argument is an float.
-func (b *Builder) AddFloat(keyword *types.Keyword, f float64) *Builder {
-	b.check(keyword, types.ArgTypeFloat)
-	b.s.Parts = append(b.s.Parts, types.MakePart(keyword, types.PartFloat(f)))
+func (b *Builder) AddFloat(keyword *schema.Keyword, f float64) *Builder {
+	b.check(keyword, arg_type.ArgTypeFloat)
+	b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartFloat(f)))
 	return b
 }
 
 // AddSchema adds a keyword whose argument is a schema.
 // This panics if the schema is nil.
-func (b *Builder) AddSchema(keyword *types.Keyword, s *types.Schema) *Builder {
-	b.check(keyword, types.ArgTypeSchema)
+func (b *Builder) AddSchema(keyword *schema.Keyword, s *schema.Schema) *Builder {
+	b.check(keyword, arg_type.ArgTypeSchema)
 	if s == nil {
 		panic(fmt.Sprintf("%s schema is nil", keyword.Name))
 	}
-	b.s.Parts = append(b.s.Parts, types.MakePart(keyword, types.PartSchema{S: s}))
+	b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartSchema{S: s}))
 	return b
 }
 
 // AddSchemas adds a keyword whose argument is a list of schemas.
 // This panics if the list of schemas is empty or any is nil.
 // This may be used to implement a custom schema keyword.
-func (b *Builder) AddSchemas(keyword *types.Keyword, schemas []*types.Schema) *Builder {
-	b.check(keyword, types.ArgTypeSchemas)
+func (b *Builder) AddSchemas(keyword *schema.Keyword, schemas []*schema.Schema) *Builder {
+	b.check(keyword, arg_type.ArgTypeSchemas)
 	if len(schemas) == 0 {
 		panic(fmt.Sprintf("%s requires at least one schema", keyword.Name))
 	}
@@ -127,23 +128,23 @@ func (b *Builder) AddSchemas(keyword *types.Keyword, schemas []*types.Schema) *B
 			panic(fmt.Sprintf("%s schema %d is nil", keyword.Name, i))
 		}
 	}
-	b.s.Parts = append(b.s.Parts, types.MakePart(keyword, types.PartSchemas(schemas)))
+	b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartSchemas(schemas)))
 	return b
 }
 
 // AddMapSchema adds a keyword whose argument is a mapping
 // from strings to schemas.
-func (b *Builder) AddMapSchema(keyword *types.Keyword, m map[string]*types.Schema) *Builder {
-	b.check(keyword, types.ArgTypeMapSchema)
-	b.s.Parts = append(b.s.Parts, types.MakePart(keyword, types.PartMapSchema(m)))
+func (b *Builder) AddMapSchema(keyword *schema.Keyword, m map[string]*schema.Schema) *Builder {
+	b.check(keyword, arg_type.ArgTypeMapSchema)
+	b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartMapSchema(m)))
 	return b
 }
 
 // AddSchemaOrSchemas adds a keyword whose argument is
 // either a single schema or an array of schemas.
-func (b *Builder) AddSchemaOrSchemas(keyword *types.Keyword, pv types.PartSchemaOrSchemas) *Builder {
-	b.check(keyword, types.ArgTypeSchemaOrSchemas)
-	b.s.Parts = append(b.s.Parts, types.MakePart(keyword, pv))
+func (b *Builder) AddSchemaOrSchemas(keyword *schema.Keyword, pv schema.PartSchemaOrSchemas) *Builder {
+	b.check(keyword, arg_type.ArgTypeSchemaOrSchemas)
+	b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, pv))
 	return b
 }
 
@@ -151,22 +152,22 @@ func (b *Builder) AddSchemaOrSchemas(keyword *types.Keyword, pv types.PartSchema
 // a map from strings to either arrays or schemas.
 // This is like the draft7 "dependencies" keyword.
 // This probably should not be used for anything else.
-func (b *Builder) AddMapArrayOrSchema(keyword *types.Keyword, pv types.PartMapArrayOrSchema) *Builder {
-	b.check(keyword, types.ArgTypeMapArrayOrSchema)
-	b.s.Parts = append(b.s.Parts, types.MakePart(keyword, pv))
+func (b *Builder) AddMapArrayOrSchema(keyword *schema.Keyword, pv schema.PartMapArrayOrSchema) *Builder {
+	b.check(keyword, arg_type.ArgTypeMapArrayOrSchema)
+	b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, pv))
 	return b
 }
 
 // AddAny adds a keyword whose argument has any type.
-func (b *Builder) AddAny(keyword *types.Keyword, v any) *Builder {
-	b.s.Parts = append(b.s.Parts, types.MakePart(keyword, types.PartAny{V: v}))
+func (b *Builder) AddAny(keyword *schema.Keyword, v any) *Builder {
+	b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartAny{V: v}))
 	return b
 }
 
 // check panics if a keyword is used with the wrong type.
-func (b *Builder) check(keyword *types.Keyword, want types.ArgType) {
+func (b *Builder) check(keyword *schema.Keyword, want arg_type.ArgType) {
 	switch keyword.ArgType {
-	case want, types.ArgTypeAny:
+	case want, arg_type.ArgTypeAny:
 	default:
 		argName := argtype.Name(keyword.ArgType)
 		panic(fmt.Sprintf("Add%s called for %s which expects %s", argName, keyword.Name, argName))
@@ -174,7 +175,7 @@ func (b *Builder) check(keyword *types.Keyword, want types.ArgType) {
 }
 
 // AddSchemaParts adds a list of parts.
-func (b *Builder) AddSchemaParts(parts []types.Part) *Builder {
+func (b *Builder) AddSchemaParts(parts []schema.Part) *Builder {
 	b.s.Parts = append(b.s.Parts, parts...)
 	return b
 }
@@ -186,7 +187,7 @@ type InferOpts struct {
 	// the value is the schema to use for values of that type.
 	// This overrides any default inferences;
 	// mapping to nil uses the default behavior for that type.
-	Types map[reflect.Type]*types.Schema
+	Types map[reflect.Type]*schema.Schema
 
 	// If IgnoreInvalidTypes is true, fields that can't be represented
 	// in a JSON schema are ignored. For example, fields of
@@ -244,27 +245,27 @@ func Infer[T any, Builder inferBuilder[Builder]](builder Builder, opts *InferOpt
 // InferType is like [Infer] but takes a [reflect.Type] rather than
 // a type argument.
 func InferType[Builder inferBuilder[Builder]](builder Builder, typ reflect.Type, opts *InferOpts) (Builder, error) {
-    return inferType[Builder](builder, typ, make(map[reflect.Type]bool), opts)
+	return inferType[Builder](builder, typ, make(map[reflect.Type]bool), opts)
 }
 
 // inferBuilder is an interface used as a constraint by [Infer].
 // This lets Infer accept a version-specific Builder type.
 type inferBuilder[Builder any] interface {
-	AddSchemaParts([]types.Part) Builder
+	AddSchemaParts([]schema.Part) Builder
 	AddType(args ...string) Builder
-	AddItemsSchema(*types.Schema) Builder
+	AddItemsSchema(*schema.Schema) Builder
 	AddMinItems(int64) Builder
 	AddMaxItems(int64) Builder
 	AddMinimum(float64) Builder
 	AddMaximum(float64) Builder
-	AddProperties(map[string]*types.Schema) Builder
-	AddAdditionalProperties(*types.Schema) Builder
+	AddProperties(map[string]*schema.Schema) Builder
+	AddAdditionalProperties(*schema.Schema) Builder
 	AddRequired([]string) Builder
 	AddEnum(any) Builder
 	AddDescription(string) Builder
 	NewSubBuilder() Builder
-	BoolSchema(bool) *types.Schema
-	Build() *types.Schema
+	BoolSchema(bool) *schema.Schema
+	Build() *schema.Schema
 }
 
 // inferType implements Infer, using a map to detect type cycles.
@@ -365,22 +366,22 @@ func inferType[Builder inferBuilder[Builder]](builder Builder, typ reflect.Type,
 			}
 			return z, fmt.Errorf("unsupported map key type %s", typ.Key())
 		}
-  be := builder.NewSubBuilder()
-  be, err := inferType[Builder](be, typ.Elem(), seen, opts)
-  if err != nil {
-      return z, fmt.Errorf("map value schema: %v", err)
-  }
+		be := builder.NewSubBuilder()
+		be, err := inferType[Builder](be, typ.Elem(), seen, opts)
+		if err != nil {
+			return z, fmt.Errorf("map value schema: %v", err)
+		}
 		if !reflect.ValueOf(be).IsZero() {
 			builder = builder.AddAdditionalProperties(be.Build())
 		}
 
 	case reflect.Slice, reflect.Array:
 		addType = "array"
-  be := builder.NewSubBuilder()
-  be, err := inferType[Builder](be, typ.Elem(), seen, opts)
-  if err != nil {
-      return z, fmt.Errorf("slice/array element schema: %v", err)
-  }
+		be := builder.NewSubBuilder()
+		be, err := inferType[Builder](be, typ.Elem(), seen, opts)
+		if err != nil {
+			return z, fmt.Errorf("slice/array element schema: %v", err)
+		}
 		if !reflect.ValueOf(be).IsZero() {
 			builder = builder.AddItemsSchema(be.Build())
 			if typ.Kind() == reflect.Array {
@@ -393,7 +394,7 @@ func inferType[Builder inferBuilder[Builder]](builder Builder, typ reflect.Type,
 	case reflect.Struct:
 		addType = "object"
 
-		var properties map[string]*types.Schema
+		var properties map[string]*schema.Schema
 		var required []string
 		fields := reflect.VisibleFields(typ)
 		for i := 0; i < len(fields); i++ {
@@ -421,15 +422,15 @@ func inferType[Builder inferBuilder[Builder]](builder Builder, typ reflect.Type,
 					case "$schema":
 						// ignore
 					case "type":
-						if part.Value.(types.PartStringOrStrings).String != "object" {
+						if part.Value.(schema.PartStringOrStrings).String != "object" {
 							return z, fmt.Errorf(`custom schema for embedded field must have type "object", got %q`, part.Value)
 						}
 						sawType = true
 					case "properties":
 						if properties == nil {
-							properties = make(map[string]*types.Schema)
+							properties = make(map[string]*schema.Schema)
 						}
-						for n, s := range part.Value.(types.PartMapSchema) {
+						for n, s := range part.Value.(schema.PartMapSchema) {
 							properties[n] = s.Clone()
 						}
 					default:
@@ -461,11 +462,11 @@ func inferType[Builder inferBuilder[Builder]](builder Builder, typ reflect.Type,
 				continue
 			}
 
-   bf := builder.NewSubBuilder()
-   bf, err := inferType[Builder](bf, field.Type, seen, opts)
-   if err != nil {
-       return z, fmt.Errorf("field %s.%s schema: %v", typ, field.Name, err)
-   }
+			bf := builder.NewSubBuilder()
+			bf, err := inferType[Builder](bf, field.Type, seen, opts)
+			if err != nil {
+				return z, fmt.Errorf("field %s.%s schema: %v", typ, field.Name, err)
+			}
 			if reflect.ValueOf(bf).IsZero() {
 				continue
 			}
@@ -480,7 +481,7 @@ func inferType[Builder inferBuilder[Builder]](builder Builder, typ reflect.Type,
 			bs := bf.Build()
 
 			if properties == nil {
-				properties = make(map[string]*types.Schema)
+				properties = make(map[string]*schema.Schema)
 			}
 			properties[name] = bs
 
@@ -561,14 +562,14 @@ func fieldJSON(sf *reflect.StructField) (name string, omit, optional bool) {
 // addParts adds the parts of s to builder.
 // If addNull is true then any existing "type" attribute
 // is modified to also permit "null".
-func addParts[Builder inferBuilder[Builder]](builder Builder, s *types.Schema, addNull bool) Builder {
+func addParts[Builder inferBuilder[Builder]](builder Builder, s *schema.Schema, addNull bool) Builder {
 	parts := s.Parts
 	if addNull {
 		for i, part := range parts {
 			if part.Keyword.Name != "type" {
 				continue
 			}
-			pv := part.Value.(types.PartStringOrStrings)
+			pv := part.Value.(schema.PartStringOrStrings)
 			if pv.String == "null" || slices.Contains(pv.Strings, "null") {
 				break
 			}

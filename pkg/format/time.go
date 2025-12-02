@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/schema"
 )
 
 // dateTimeFormat requires a valid date/time.
-func dateTimeFormat(instance any, state *types.ValidationState) error {
+func dateTimeFormat(instance any, state *schema.ValidationState) error {
 	s, ok := instance.(string)
 	if !ok {
 		return nil
@@ -42,7 +42,7 @@ func isValidDateTime(s string) bool {
 }
 
 // dateFormat requires a valid date.
-func dateFormat(instance any, state *types.ValidationState) error {
+func dateFormat(instance any, state *schema.ValidationState) error {
 	s, ok := instance.(string)
 	if !ok {
 		return nil
@@ -96,7 +96,7 @@ func isValidDate(s string) bool {
 }
 
 // timeFormat requires a valid time.
-func timeFormat(instance any, state *types.ValidationState) error {
+func timeFormat(instance any, state *schema.ValidationState) error {
 	s, ok := instance.(string)
 	if !ok {
 		return nil
@@ -207,7 +207,7 @@ func isValidTime(s string) bool {
 }
 
 // durationFormat requires a valid duration.
-func durationFormat(instance any, state *types.ValidationState) error {
+func durationFormat(instance any, state *schema.ValidationState) error {
 	s, ok := instance.(string)
 	if !ok {
 		return nil

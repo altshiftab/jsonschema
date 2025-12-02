@@ -9,12 +9,12 @@ package schemacache
 import (
 	"sync"
 
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/schema"
 )
 
 // Cache is a cache that holds schemas.
 type Cache struct {
-	m map[cacheKey]*types.Schema
+	m map[cacheKey]*schema.Schema
 }
 
 // cacheKey is the key type of cachedSchemas.
@@ -28,21 +28,21 @@ type cacheKey struct {
 
 // Load checks the cache for a schema.
 // It returns nil if the path is not cached.
-func (c *Cache) Load(schemaID, path string) *types.Schema {
+func (c *Cache) Load(schemaID, path string) *schema.Schema {
 	return c.m[cacheKey{schemaID, path}]
 }
 
 // Sort stores a schema in the cache.
 // It returns the schema to use, which may differ
 // if it has already been cached.
-func (c *Cache) Store(schemaID, path string, s *types.Schema) *types.Schema {
+func (c *Cache) Store(schemaID, path string, s *schema.Schema) *schema.Schema {
 	key := cacheKey{schemaID, path}
 	if sc := c.m[key]; sc != nil {
 		return sc
 	}
 
 	if c.m == nil {
-		c.m = make(map[cacheKey]*types.Schema)
+		c.m = make(map[cacheKey]*schema.Schema)
 	}
 
 	c.m[key] = s
@@ -57,7 +57,7 @@ type ConcurrentCache struct {
 
 // Load checks the cache for a schema.
 // It returns nil if the path is not cached.
-func (cc *ConcurrentCache) Load(schemaID, path string) *types.Schema {
+func (cc *ConcurrentCache) Load(schemaID, path string) *schema.Schema {
 	cc.mu.Lock()
 	defer cc.mu.Unlock()
 	return cc.cache.Load(schemaID, path)
@@ -66,7 +66,7 @@ func (cc *ConcurrentCache) Load(schemaID, path string) *types.Schema {
 // Store stores a schema in the cache.
 // It returns the schema to use, which may differ
 // if some other goroutine already cached it.
-func (cc *ConcurrentCache) Store(schemaID, path string, s *types.Schema) *types.Schema {
+func (cc *ConcurrentCache) Store(schemaID, path string, s *schema.Schema) *schema.Schema {
 	cc.mu.Lock()
 	defer cc.mu.Unlock()
 	return cc.cache.Store(schemaID, path, s)

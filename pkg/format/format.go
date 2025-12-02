@@ -10,7 +10,7 @@ package format
 
 import (
 	"github.com/altshiftab/jsonschema/internal/validator"
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/schema"
 )
 
 // init registers the defined formats.
@@ -40,6 +40,6 @@ func init() {
 // will be called to validate the schema. The function will be
 // called with an instance value. If the format does not match
 // the instance, the function should return an error.
-func RegisterFormatValidator(format string, fv func(any, *types.ValidationState) error) {
+func RegisterFormatValidator(format string, fv func(any, *schema.ValidationState) error) {
 	validator.RegisterFormatValidator(format, fv)
 }

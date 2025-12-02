@@ -9,11 +9,11 @@ import (
 	"net/mail"
 	"strings"
 
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/schema"
 )
 
 // emailFormat requires a valid email address.
-func emailFormat(instance any, state *types.ValidationState) error {
+func emailFormat(instance any, state *schema.ValidationState) error {
 	s, ok := instance.(string)
 	if !ok {
 		return nil
@@ -25,7 +25,7 @@ func emailFormat(instance any, state *types.ValidationState) error {
 }
 
 // idnEmailFormat requires a valid internationalized email address.
-func idnEmailFormat(instance any, state *types.ValidationState) error {
+func idnEmailFormat(instance any, state *schema.ValidationState) error {
 	s, ok := instance.(string)
 	if !ok {
 		return nil

@@ -10,23 +10,24 @@ import (
 	"strings"
 
 	"github.com/altshiftab/jsonschema/internal/validator"
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/arg_type"
+	"github.com/altshiftab/jsonschema/pkg/types/schema"
 )
 
 // resolvedRefKeyword is a special Keyword used to record what a
 // $ref keyword refers to in a schema.
-var resolvedRefKeyword = types.Keyword{
+var resolvedRefKeyword = schema.Keyword{
 	Name:      "$$resolvedRef",
-	ArgType:   types.ArgTypeSchema,
+	ArgType:   arg_type.ArgTypeSchema,
 	Validate:  validator.ValidateTrue,
 	Generated: true,
 }
 
 // resolvedDynamicRefKeyword is a special Keyword used to record
 // what a $dynamicRef refers to in a schema.
-var resolvedDynamicRefKeyword = types.Keyword{
+var resolvedDynamicRefKeyword = schema.Keyword{
 	Name:      "$$resolvedDynamicRef",
-	ArgType:   types.ArgTypeSchema,
+	ArgType:   arg_type.ArgTypeSchema,
 	Validate:  validator.ValidateTrue,
 	Generated: true,
 }
@@ -36,9 +37,9 @@ var resolvedDynamicRefKeyword = types.Keyword{
 // any $dynamicAnchor while evaluating. We need this fallback for
 // a reference to a subschema that skips over the base schema
 // that records the dynamic anchor.
-var detachedDynamicRefKeyword = types.Keyword{
+var detachedDynamicRefKeyword = schema.Keyword{
 	Name:      "$$detachedDynamicRef",
-	ArgType:   types.ArgTypeSchema,
+	ArgType:   arg_type.ArgTypeSchema,
 	Validate:  validator.ValidateTrue,
 	Generated: true,
 }
@@ -47,32 +48,32 @@ var detachedDynamicRefKeyword = types.Keyword{
 // recordDynamicAnchorKeyword and clearDynamicAnchorKeyword.
 type recordDynamicAnchor struct {
 	anchor string
-	schema *types.Schema
+	schema *schema.Schema
 }
 
 // recordDynamicAnchorKeyword is a special Keyword that records a
 // $dynamicAnchor. The string is the name of the $dynamicAnchor.
-var recordDynamicAnchorKeyword = types.Keyword{
+var recordDynamicAnchorKeyword = schema.Keyword{
 	Name:      "$$recordDynamicAnchorKeyword",
-	ArgType:   types.ArgTypeString,
+	ArgType:   arg_type.ArgTypeString,
 	Validate:  validator.ArgTypeAny(validateRecordDynamicAnchor),
 	Generated: true,
 }
 
 // clearDynamicAnchorKeyword is a special Keyword that removes a
 // $dynamicAnchor stored during validation.
-var clearDynamicAnchorKeyword = types.Keyword{
+var clearDynamicAnchorKeyword = schema.Keyword{
 	Name:      "$$clearDynamicAnchorKeyword",
-	ArgType:   types.ArgTypeString,
+	ArgType:   arg_type.ArgTypeString,
 	Validate:  validator.ArgTypeAny(validateClearDynamicAnchor),
 	Generated: true,
 }
 
 // validateRef validates a $ref keyword.
-func validateRef(arg types.PartString, instance any, state *types.ValidationState) error {
+func validateRef(arg schema.PartString, instance any, state *schema.ValidationState) error {
 	for _, part := range state.Schema.Parts {
 		if part.Keyword == &resolvedRefKeyword {
-			return part.Value.(types.PartSchema).S.ValidateInPlaceSchema(instance, state)
+			return part.Value.(schema.PartSchema).S.ValidateInPlaceSchema(instance, state)
 		}
 	}
 	// This should never happen.
@@ -80,12 +81,12 @@ func validateRef(arg types.PartString, instance any, state *types.ValidationStat
 }
 
 // validateDynamicRef validates a $dynamicRef keyword.
-func validateDynamicRef(arg types.PartString, instance any, state *types.ValidationState) error {
+func validateDynamicRef(arg schema.PartString, instance any, state *schema.ValidationState) error {
 	// See if this was resolved non-dynamically.
-	var s *types.Schema
+	var s *schema.Schema
 	for _, part := range state.Schema.Parts {
 		if part.Keyword == &resolvedDynamicRefKeyword {
-			s = part.Value.(types.PartSchema).S
+			s = part.Value.(schema.PartSchema).S
 			break
 		}
 	}
@@ -102,7 +103,7 @@ func validateDynamicRef(arg types.PartString, instance any, state *types.Validat
 			// Last try: a detached $dynamicAnchor.
 			for _, part := range state.Schema.Parts {
 				if part.Keyword == &detachedDynamicRefKeyword {
-					s = part.Value.(types.PartSchema).S
+					s = part.Value.(schema.PartSchema).S
 					break
 				}
 			}
@@ -119,18 +120,18 @@ func validateDynamicRef(arg types.PartString, instance any, state *types.Validat
 // validationData is data specific to the draft used for validation.
 // We record the current dynamic anchors.
 type validationData struct {
-	dynamicAnchors map[string]*types.Schema
+	dynamicAnchors map[string]*schema.Schema
 }
 
 // validateRecordDynamicAnchor records a dynamic anchor during validation.
 // This is added by the builder when we see a $dynamicAnchor.
 // We record the dynamic anchor while validating this schema,
 // so that a $dynamicRef can see it.
-func validateRecordDynamicAnchor(arg types.PartAny, instance any, state *types.ValidationState) error {
+func validateRecordDynamicAnchor(arg schema.PartAny, instance any, state *schema.ValidationState) error {
 	da := arg.V.(*recordDynamicAnchor)
 	if *state.VersionData == nil {
 		*state.VersionData = &validationData{
-			dynamicAnchors: make(map[string]*types.Schema),
+			dynamicAnchors: make(map[string]*schema.Schema),
 		}
 	}
 	vd := (*state.VersionData).(*validationData)
@@ -148,7 +149,7 @@ func validateRecordDynamicAnchor(arg types.PartAny, instance any, state *types.V
 // at the end of the schema. This removes the dynamic anchor added by
 // validateRecordDynamicAnchor, so that the dynamic anchor is only
 // visible while processing the scheme that defines int.
-func validateClearDynamicAnchor(arg types.PartAny, instance any, state *types.ValidationState) error {
+func validateClearDynamicAnchor(arg schema.PartAny, instance any, state *schema.ValidationState) error {
 	da := arg.V.(*recordDynamicAnchor)
 	vd := (*state.VersionData).(*validationData)
 	if vd.dynamicAnchors[da.anchor] == da.schema {
@@ -159,7 +160,7 @@ func validateClearDynamicAnchor(arg types.PartAny, instance any, state *types.Va
 
 // resolveDynamicRef dynamically resolves a $dynamicRef.
 // This returns nil if the reference can't be resolved.
-func resolveDynamicRef(arg types.PartString, state *types.ValidationState) (*types.Schema, error) {
+func resolveDynamicRef(arg schema.PartString, state *schema.ValidationState) (*schema.Schema, error) {
 	if *state.VersionData == nil {
 		return nil, nil
 	}

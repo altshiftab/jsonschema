@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"net/netip"
 
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/schema"
 )
 
 // ipv4Format requires a valid IPv4 address.
-func ipv4Format(instance any, state *types.ValidationState) error {
+func ipv4Format(instance any, state *schema.ValidationState) error {
 	s, ok := instance.(string)
 	if !ok {
 		return nil
@@ -25,7 +25,7 @@ func ipv4Format(instance any, state *types.ValidationState) error {
 }
 
 // ipv6Format requires a valid IPv6 address.
-func ipv6Format(instance any, state *types.ValidationState) error {
+func ipv6Format(instance any, state *schema.ValidationState) error {
 	s, ok := instance.(string)
 	if !ok {
 		return nil

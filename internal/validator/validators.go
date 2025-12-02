@@ -9,13 +9,13 @@ package validator
 import (
 	"fmt"
 
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/schema"
 )
 
 // ArgTypeBool converts a validator function that accepts
 // [types.ArgTypeBool] to one that can be stored in a [types.Keyword].
-func ArgTypeBool(fn func(arg types.PartBool, instance any, state *types.ValidationState) error) func(types.PartValue, any, *types.ValidationState) error {
-	return func(arg types.PartValue, instance any, state *types.ValidationState) error {
+func ArgTypeBool(fn func(arg schema.PartBool, instance any, state *schema.ValidationState) error) func(schema.PartValue, any, *schema.ValidationState) error {
+	return func(arg schema.PartValue, instance any, state *schema.ValidationState) error {
 		v, err := ToBool(arg)
 		if err != nil {
 			return err
@@ -25,10 +25,10 @@ func ArgTypeBool(fn func(arg types.PartBool, instance any, state *types.Validati
 }
 
 // ToBool converts arg into a [types.PartBool].
-func ToBool(arg types.PartValue) (types.PartBool, error) {
-	v, ok := arg.(types.PartBool)
+func ToBool(arg schema.PartValue) (schema.PartBool, error) {
+	v, ok := arg.(schema.PartBool)
 	if !ok {
-		var zero types.PartBool
+		var zero schema.PartBool
 		return zero, fmt.Errorf("got %T, expect bool", arg)
 	}
 	return v, nil
@@ -36,8 +36,8 @@ func ToBool(arg types.PartValue) (types.PartBool, error) {
 
 // ArgTypeString converts a validator function that accepts
 // [types.ArgTypeString] to one that can be stored in a [types.Keyword].
-func ArgTypeString(fn func(arg types.PartString, instance any, state *types.ValidationState) error) func(types.PartValue, any, *types.ValidationState) error {
-	return func(arg types.PartValue, instance any, state *types.ValidationState) error {
+func ArgTypeString(fn func(arg schema.PartString, instance any, state *schema.ValidationState) error) func(schema.PartValue, any, *schema.ValidationState) error {
+	return func(arg schema.PartValue, instance any, state *schema.ValidationState) error {
 		v, err := ToString(arg)
 		if err != nil {
 			return err
@@ -47,10 +47,10 @@ func ArgTypeString(fn func(arg types.PartString, instance any, state *types.Vali
 }
 
 // ToString converts arg into a [types.PartString].
-func ToString(arg types.PartValue) (types.PartString, error) {
-	v, ok := arg.(types.PartString)
+func ToString(arg schema.PartValue) (schema.PartString, error) {
+	v, ok := arg.(schema.PartString)
 	if !ok {
-		var zero types.PartString
+		var zero schema.PartString
 		return zero, fmt.Errorf("got %T, expect a string", arg)
 	}
 	return v, nil
@@ -58,8 +58,8 @@ func ToString(arg types.PartValue) (types.PartString, error) {
 
 // ArgTypeStrings converts a validator function that accepts
 // [types.ArgTypeStrings] to one that can be stored in a [types.Keyword].
-func ArgTypeStrings(fn func(arg types.PartStrings, instance any, state *types.ValidationState) error) func(types.PartValue, any, *types.ValidationState) error {
-	return func(arg types.PartValue, instance any, state *types.ValidationState) error {
+func ArgTypeStrings(fn func(arg schema.PartStrings, instance any, state *schema.ValidationState) error) func(schema.PartValue, any, *schema.ValidationState) error {
+	return func(arg schema.PartValue, instance any, state *schema.ValidationState) error {
 		v, err := ToStrings(arg)
 		if err != nil {
 			return err
@@ -69,10 +69,10 @@ func ArgTypeStrings(fn func(arg types.PartStrings, instance any, state *types.Va
 }
 
 // ToStrings converts arg into a [types.PartStrings].
-func ToStrings(arg types.PartValue) (types.PartStrings, error) {
-	v, ok := arg.(types.PartStrings)
+func ToStrings(arg schema.PartValue) (schema.PartStrings, error) {
+	v, ok := arg.(schema.PartStrings)
 	if !ok {
-		var zero types.PartStrings
+		var zero schema.PartStrings
 		return zero, fmt.Errorf("got %T, expect an array of strings", arg)
 	}
 	return v, nil
@@ -80,8 +80,8 @@ func ToStrings(arg types.PartValue) (types.PartStrings, error) {
 
 // ArgTypeStringOrStrings converts a validator function that accepts
 // [types.ArgTypeStringOrStrings] to one that can be stored in a [types.Keyword].
-func ArgTypeStringOrStrings(fn func(arg types.PartStringOrStrings, instance any, state *types.ValidationState) error) func(types.PartValue, any, *types.ValidationState) error {
-	return func(arg types.PartValue, instance any, state *types.ValidationState) error {
+func ArgTypeStringOrStrings(fn func(arg schema.PartStringOrStrings, instance any, state *schema.ValidationState) error) func(schema.PartValue, any, *schema.ValidationState) error {
+	return func(arg schema.PartValue, instance any, state *schema.ValidationState) error {
 		v, err := ToStringOrStrings(arg)
 		if err != nil {
 			return err
@@ -91,10 +91,10 @@ func ArgTypeStringOrStrings(fn func(arg types.PartStringOrStrings, instance any,
 }
 
 // ToStringOrStrings converts arg into a [types.PartStringOrStrings].
-func ToStringOrStrings(arg types.PartValue) (types.PartStringOrStrings, error) {
-	v, ok := arg.(types.PartStringOrStrings)
+func ToStringOrStrings(arg schema.PartValue) (schema.PartStringOrStrings, error) {
+	v, ok := arg.(schema.PartStringOrStrings)
 	if !ok {
-		var zero types.PartStringOrStrings
+		var zero schema.PartStringOrStrings
 		return zero, fmt.Errorf("got %T, expect a string or an array of strings", arg)
 	}
 	return v, nil
@@ -102,8 +102,8 @@ func ToStringOrStrings(arg types.PartValue) (types.PartStringOrStrings, error) {
 
 // ArgTypeInt converts a validator function that accepts
 // [types.ArgTypeInt] to one that can be stored in a [types.Keyword].
-func ArgTypeInt(fn func(arg types.PartInt, instance any, state *types.ValidationState) error) func(types.PartValue, any, *types.ValidationState) error {
-	return func(arg types.PartValue, instance any, state *types.ValidationState) error {
+func ArgTypeInt(fn func(arg schema.PartInt, instance any, state *schema.ValidationState) error) func(schema.PartValue, any, *schema.ValidationState) error {
+	return func(arg schema.PartValue, instance any, state *schema.ValidationState) error {
 		v, err := ToInt(arg)
 		if err != nil {
 			return err
@@ -114,8 +114,8 @@ func ArgTypeInt(fn func(arg types.PartInt, instance any, state *types.Validation
 
 // ArgTypeFloat converts a validator function that accepts
 // [types.ArgTypeFloat] to one that can be stored in a [types.Keyword].
-func ArgTypeFloat(fn func(arg types.PartFloat, instance any, state *types.ValidationState) error) func(types.PartValue, any, *types.ValidationState) error {
-	return func(arg types.PartValue, instance any, state *types.ValidationState) error {
+func ArgTypeFloat(fn func(arg schema.PartFloat, instance any, state *schema.ValidationState) error) func(schema.PartValue, any, *schema.ValidationState) error {
+	return func(arg schema.PartValue, instance any, state *schema.ValidationState) error {
 		v, err := ToFloat(arg)
 		if err != nil {
 			return err
@@ -126,8 +126,8 @@ func ArgTypeFloat(fn func(arg types.PartFloat, instance any, state *types.Valida
 
 // ArgTypeSchema converts a validator function that accepts
 // [types.ArgTypeSchema] to one that can be stored in a [types.Keyword].
-func ArgTypeSchema(fn func(arg types.PartSchema, instance any, state *types.ValidationState) error) func(types.PartValue, any, *types.ValidationState) error {
-	return func(arg types.PartValue, instance any, state *types.ValidationState) error {
+func ArgTypeSchema(fn func(arg schema.PartSchema, instance any, state *schema.ValidationState) error) func(schema.PartValue, any, *schema.ValidationState) error {
+	return func(arg schema.PartValue, instance any, state *schema.ValidationState) error {
 		v, err := ToSchema(arg)
 		if err != nil {
 			return err
@@ -137,10 +137,10 @@ func ArgTypeSchema(fn func(arg types.PartSchema, instance any, state *types.Vali
 }
 
 // ToSchema converts arg into a [types.PartSchema].
-func ToSchema(arg types.PartValue) (types.PartSchema, error) {
-	v, ok := arg.(types.PartSchema)
+func ToSchema(arg schema.PartValue) (schema.PartSchema, error) {
+	v, ok := arg.(schema.PartSchema)
 	if !ok {
-		var zero types.PartSchema
+		var zero schema.PartSchema
 		return zero, fmt.Errorf("got %T, expect a schema", arg)
 	}
 	return v, nil
@@ -148,8 +148,8 @@ func ToSchema(arg types.PartValue) (types.PartSchema, error) {
 
 // ArgTypeSchemas converts a validator function that accepts
 // [types.ArgTypeSchemas] to one that can be stored in a [types.Keyword].
-func ArgTypeSchemas(fn func(arg types.PartSchemas, instance any, state *types.ValidationState) error) func(types.PartValue, any, *types.ValidationState) error {
-	return func(arg types.PartValue, instance any, state *types.ValidationState) error {
+func ArgTypeSchemas(fn func(arg schema.PartSchemas, instance any, state *schema.ValidationState) error) func(schema.PartValue, any, *schema.ValidationState) error {
+	return func(arg schema.PartValue, instance any, state *schema.ValidationState) error {
 		v, err := ToSchemas(arg)
 		if err != nil {
 			return err
@@ -159,10 +159,10 @@ func ArgTypeSchemas(fn func(arg types.PartSchemas, instance any, state *types.Va
 }
 
 // ToSchemas converts arg into a [types.PartSchemas].
-func ToSchemas(arg types.PartValue) (types.PartSchemas, error) {
-	v, ok := arg.(types.PartSchemas)
+func ToSchemas(arg schema.PartValue) (schema.PartSchemas, error) {
+	v, ok := arg.(schema.PartSchemas)
 	if !ok {
-		var zero types.PartSchemas
+		var zero schema.PartSchemas
 		return zero, fmt.Errorf("got %T, expect an array of schemas", arg)
 	}
 	return v, nil
@@ -170,8 +170,8 @@ func ToSchemas(arg types.PartValue) (types.PartSchemas, error) {
 
 // ArgTypeMapSchema converts a validator function that accepts
 // [types.ArgTypeMapSchema] to one that can be stored in a [types.Keyword].
-func ArgTypeMapSchema(fn func(arg types.PartMapSchema, instance any, state *types.ValidationState) error) func(types.PartValue, any, *types.ValidationState) error {
-	return func(arg types.PartValue, instance any, state *types.ValidationState) error {
+func ArgTypeMapSchema(fn func(arg schema.PartMapSchema, instance any, state *schema.ValidationState) error) func(schema.PartValue, any, *schema.ValidationState) error {
+	return func(arg schema.PartValue, instance any, state *schema.ValidationState) error {
 		v, err := ToMapSchema(arg)
 		if err != nil {
 			return err
@@ -181,10 +181,10 @@ func ArgTypeMapSchema(fn func(arg types.PartMapSchema, instance any, state *type
 }
 
 // ToMapSchema converts arg into a [types.PartMapSchema].
-func ToMapSchema(arg types.PartValue) (types.PartMapSchema, error) {
-	v, ok := arg.(types.PartMapSchema)
+func ToMapSchema(arg schema.PartValue) (schema.PartMapSchema, error) {
+	v, ok := arg.(schema.PartMapSchema)
 	if !ok {
-		var zero types.PartMapSchema
+		var zero schema.PartMapSchema
 		return zero, fmt.Errorf("got %T, expect a mapping from strings to schemas", arg)
 	}
 	return v, nil
@@ -192,8 +192,8 @@ func ToMapSchema(arg types.PartValue) (types.PartMapSchema, error) {
 
 // ArgTypeSchemaOrSchemas converts a validator function that accepts
 // [types.ArgTypeSchemaOrSchemas] to one that can be stored in a [types.Keyword].
-func ArgTypeSchemaOrSchemas(fn func(arg types.PartSchemaOrSchemas, instance any, state *types.ValidationState) error) func(types.PartValue, any, *types.ValidationState) error {
-	return func(arg types.PartValue, instance any, state *types.ValidationState) error {
+func ArgTypeSchemaOrSchemas(fn func(arg schema.PartSchemaOrSchemas, instance any, state *schema.ValidationState) error) func(schema.PartValue, any, *schema.ValidationState) error {
+	return func(arg schema.PartValue, instance any, state *schema.ValidationState) error {
 		v, err := ToSchemaOrSchemas(arg)
 		if err != nil {
 			return err
@@ -203,10 +203,10 @@ func ArgTypeSchemaOrSchemas(fn func(arg types.PartSchemaOrSchemas, instance any,
 }
 
 // ToSchemaOrSchemas converts arg into a [types.PartSchemaOrSchemas].
-func ToSchemaOrSchemas(arg types.PartValue) (types.PartSchemaOrSchemas, error) {
-	v, ok := arg.(types.PartSchemaOrSchemas)
+func ToSchemaOrSchemas(arg schema.PartValue) (schema.PartSchemaOrSchemas, error) {
+	v, ok := arg.(schema.PartSchemaOrSchemas)
 	if !ok {
-		var zero types.PartSchemaOrSchemas
+		var zero schema.PartSchemaOrSchemas
 		return zero, fmt.Errorf("got %T, expect a single schema or an array of schemas", arg)
 	}
 	return v, nil
@@ -214,8 +214,8 @@ func ToSchemaOrSchemas(arg types.PartValue) (types.PartSchemaOrSchemas, error) {
 
 // ArgTypeMapArrayOrSchema converts a validator function that accepts
 // [types.ArgTypeMapArrayOrSchema] to one that can be stored in a [types.Keyword].
-func ArgTypeMapArrayOrSchema(fn func(arg types.PartMapArrayOrSchema, instance any, state *types.ValidationState) error) func(types.PartValue, any, *types.ValidationState) error {
-	return func(arg types.PartValue, instance any, state *types.ValidationState) error {
+func ArgTypeMapArrayOrSchema(fn func(arg schema.PartMapArrayOrSchema, instance any, state *schema.ValidationState) error) func(schema.PartValue, any, *schema.ValidationState) error {
+	return func(arg schema.PartValue, instance any, state *schema.ValidationState) error {
 		v, err := ToMapArrayOrSchema(arg)
 		if err != nil {
 			return err
@@ -225,10 +225,10 @@ func ArgTypeMapArrayOrSchema(fn func(arg types.PartMapArrayOrSchema, instance an
 }
 
 // ToMapArrayOrSchema converts arg into a [types.PartMapArrayOrSchema].
-func ToMapArrayOrSchema(arg types.PartValue) (types.PartMapArrayOrSchema, error) {
-	v, ok := arg.(types.PartMapArrayOrSchema)
+func ToMapArrayOrSchema(arg schema.PartValue) (schema.PartMapArrayOrSchema, error) {
+	v, ok := arg.(schema.PartMapArrayOrSchema)
 	if !ok {
-		var zero types.PartMapArrayOrSchema
+		var zero schema.PartMapArrayOrSchema
 		return zero, fmt.Errorf("got %T, expect a mapping from strings to either a schema or an array of strings", arg)
 	}
 	return v, nil
@@ -236,8 +236,8 @@ func ToMapArrayOrSchema(arg types.PartValue) (types.PartMapArrayOrSchema, error)
 
 // ArgTypeAny converts a validator function that accepts
 // [types.ArgTypeAny] to one that can be stored in a [types.Keyword].
-func ArgTypeAny(fn func(arg types.PartAny, instance any, state *types.ValidationState) error) func(types.PartValue, any, *types.ValidationState) error {
-	return func(arg types.PartValue, instance any, state *types.ValidationState) error {
+func ArgTypeAny(fn func(arg schema.PartAny, instance any, state *schema.ValidationState) error) func(schema.PartValue, any, *schema.ValidationState) error {
+	return func(arg schema.PartValue, instance any, state *schema.ValidationState) error {
 		v, err := ToAny(arg)
 		if err != nil {
 			return err
@@ -247,10 +247,10 @@ func ArgTypeAny(fn func(arg types.PartAny, instance any, state *types.Validation
 }
 
 // ToAny converts arg into a [types.PartAny].
-func ToAny(arg types.PartValue) (types.PartAny, error) {
-	v, ok := arg.(types.PartAny)
+func ToAny(arg schema.PartValue) (schema.PartAny, error) {
+	v, ok := arg.(schema.PartAny)
 	if !ok {
-		var zero types.PartAny
+		var zero schema.PartAny
 		return zero, fmt.Errorf("got %T, expect any type", arg)
 	}
 	return v, nil

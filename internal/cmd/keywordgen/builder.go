@@ -10,15 +10,15 @@ import (
 	"os"
 
 	"github.com/altshiftab/jsonschema/internal/argtype"
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/arg_type"
 )
 
 // writeBuilderHeader writes the start of the Builder section.
 func writeBuilderHeader(builderBuf *bytes.Buffer) {
-	for t := types.ArgTypeBool; t <= types.ArgTypeAny; t++ {
+	for t := arg_type.ArgTypeBool; t <= arg_type.ArgTypeAny; t++ {
 		// We don't add a method for StringOrStrings;
 		// instead we use AddString and AddStrings.
-		if t == types.ArgTypeStringOrStrings {
+		if t == arg_type.ArgTypeStringOrStrings {
 			continue
 		}
 

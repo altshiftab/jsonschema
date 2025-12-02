@@ -7,11 +7,11 @@ package format
 import (
 	"fmt"
 
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/schema"
 )
 
 // uuidFormat requires a valid URI.
-func uuidFormat(instance any, state *types.ValidationState) error {
+func uuidFormat(instance any, state *schema.ValidationState) error {
 	s, ok := instance.(string)
 	if !ok {
 		return nil

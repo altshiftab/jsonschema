@@ -11,12 +11,12 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/schema"
 	"golang.org/x/net/idna"
 )
 
 // hostnameFormat requires a valid hostname.
-func hostnameFormat(instance any, state *types.ValidationState) error {
+func hostnameFormat(instance any, state *schema.ValidationState) error {
 	s, ok := instance.(string)
 	if !ok {
 		return nil
@@ -28,7 +28,7 @@ func hostnameFormat(instance any, state *types.ValidationState) error {
 }
 
 // idnHostnameFormat requires a valid internationalized hostname.
-func idnHostnameFormat(instance any, state *types.ValidationState) error {
+func idnHostnameFormat(instance any, state *schema.ValidationState) error {
 	s, ok := instance.(string)
 	if !ok {
 		return nil

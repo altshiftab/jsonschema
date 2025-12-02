@@ -9,29 +9,29 @@ package argtype
 import (
 	"fmt"
 
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/arg_type"
 )
 
 // nameToString maps [types.ArgType] to a name used in generated
 // function and type names.
-var nameToString = map[types.ArgType]string{
-	types.ArgTypeBool:             "Bool",
-	types.ArgTypeString:           "String",
-	types.ArgTypeStrings:          "Strings",
-	types.ArgTypeStringOrStrings:  "StringOrStrings",
-	types.ArgTypeInt:              "Int",
-	types.ArgTypeFloat:            "Float",
-	types.ArgTypeSchema:           "Schema",
-	types.ArgTypeSchemas:          "Schemas",
-	types.ArgTypeMapSchema:        "MapSchema",
-	types.ArgTypeSchemaOrSchemas:  "SchemaOrSchemas",
-	types.ArgTypeMapArrayOrSchema: "MapArrayOrSchema",
-	types.ArgTypeAny:              "Any",
+var nameToString = map[arg_type.ArgType]string{
+	arg_type.ArgTypeBool:             "Bool",
+	arg_type.ArgTypeString:           "String",
+	arg_type.ArgTypeStrings:          "Strings",
+	arg_type.ArgTypeStringOrStrings:  "StringOrStrings",
+	arg_type.ArgTypeInt:              "Int",
+	arg_type.ArgTypeFloat:            "Float",
+	arg_type.ArgTypeSchema:           "Schema",
+	arg_type.ArgTypeSchemas:          "Schemas",
+	arg_type.ArgTypeMapSchema:        "MapSchema",
+	arg_type.ArgTypeSchemaOrSchemas:  "SchemaOrSchemas",
+	arg_type.ArgTypeMapArrayOrSchema: "MapArrayOrSchema",
+	arg_type.ArgTypeAny:              "Any",
 }
 
 // Name returns a name to use for a [types.ArgType] in
 // generated function and type names.
-func Name(sat types.ArgType) string {
+func Name(sat arg_type.ArgType) string {
 	if n, ok := nameToString[sat]; ok {
 		return n
 	}
@@ -39,23 +39,23 @@ func Name(sat types.ArgType) string {
 }
 
 // nameToGoType maps [types.ArgType] to the underlying Go type.
-var nameToGoType = map[types.ArgType]string{
-	types.ArgTypeBool:             "bool",
-	types.ArgTypeString:           "string",
-	types.ArgTypeStrings:          "[]string",
-	types.ArgTypeStringOrStrings:  "types.PartStringOrStrings",
-	types.ArgTypeInt:              "int64",
-	types.ArgTypeFloat:            "float64",
-	types.ArgTypeSchema:           "*types.Schema",
-	types.ArgTypeSchemas:          "[]*types.Schema",
-	types.ArgTypeMapSchema:        "map[string]*types.Schema",
-	types.ArgTypeSchemaOrSchemas:  "types.PartSchemaOrSchemas",
-	types.ArgTypeMapArrayOrSchema: "map[string]types.ArrayOrSchema",
-	types.ArgTypeAny:              "any",
+var nameToGoType = map[arg_type.ArgType]string{
+	arg_type.ArgTypeBool:             "bool",
+	arg_type.ArgTypeString:           "string",
+	arg_type.ArgTypeStrings:          "[]string",
+	arg_type.ArgTypeStringOrStrings:  "types.PartStringOrStrings",
+	arg_type.ArgTypeInt:              "int64",
+	arg_type.ArgTypeFloat:            "float64",
+	arg_type.ArgTypeSchema:           "*types.Schema",
+	arg_type.ArgTypeSchemas:          "[]*types.Schema",
+	arg_type.ArgTypeMapSchema:        "map[string]*types.Schema",
+	arg_type.ArgTypeSchemaOrSchemas:  "types.PartSchemaOrSchemas",
+	arg_type.ArgTypeMapArrayOrSchema: "map[string]types.ArrayOrSchema",
+	arg_type.ArgTypeAny:              "any",
 }
 
 // GoType returns the Go type of a [types.ArgType], as a string.
-func GoType(sat types.ArgType) string {
+func GoType(sat arg_type.ArgType) string {
 	if t, ok := nameToGoType[sat]; ok {
 		return t
 	}

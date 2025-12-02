@@ -13,12 +13,12 @@ import (
 	"os"
 
 	"github.com/altshiftab/jsonschema/internal/argtype"
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/arg_type"
 )
 
 type keyword struct {
 	name        string
-	argType     types.ArgType
+	argType     arg_type.ArgType
 	alwaysValid bool
 }
 
@@ -81,7 +81,7 @@ func printValidatorConvertors() {
 	fmt.Fprint(buf, header)
 	fmt.Fprintln(buf)
 
-	for t := types.ArgTypeBool; t <= types.ArgTypeAny; t++ {
+	for t := arg_type.ArgTypeBool; t <= arg_type.ArgTypeAny; t++ {
 		tn := argtype.Name(t)
 		name := "ArgType" + tn
 		fmt.Fprintln(buf)
@@ -89,31 +89,31 @@ func printValidatorConvertors() {
 
 		// For numbers we need to accept multiple possibilities,
 		// so those convertors are written by hand.
-		if t == types.ArgTypeInt || t == types.ArgTypeFloat {
+		if t == arg_type.ArgTypeInt || t == arg_type.ArgTypeFloat {
 			continue
 		}
 
 		var desc string
 		switch t {
-		case types.ArgTypeBool:
+		case arg_type.ArgTypeBool:
 			desc = "bool"
-		case types.ArgTypeString:
+		case arg_type.ArgTypeString:
 			desc = "a string"
-		case types.ArgTypeStrings:
+		case arg_type.ArgTypeStrings:
 			desc = "an array of strings"
-		case types.ArgTypeStringOrStrings:
+		case arg_type.ArgTypeStringOrStrings:
 			desc = "a string or an array of strings"
-		case types.ArgTypeSchema:
+		case arg_type.ArgTypeSchema:
 			desc = "a schema"
-		case types.ArgTypeSchemas:
+		case arg_type.ArgTypeSchemas:
 			desc = "an array of schemas"
-		case types.ArgTypeMapSchema:
+		case arg_type.ArgTypeMapSchema:
 			desc = "a mapping from strings to schemas"
-		case types.ArgTypeSchemaOrSchemas:
+		case arg_type.ArgTypeSchemaOrSchemas:
 			desc = "a single schema or an array of schemas"
-		case types.ArgTypeMapArrayOrSchema:
+		case arg_type.ArgTypeMapArrayOrSchema:
 			desc = "a mapping from strings to either a schema or an array of strings"
-		case types.ArgTypeAny:
+		case arg_type.ArgTypeAny:
 			desc = "any type"
 		default:
 			panic("can't happen")

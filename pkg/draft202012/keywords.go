@@ -10,416 +10,417 @@ import (
 	"cmp"
 
 	"github.com/altshiftab/jsonschema/internal/validator"
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/arg_type"
+	"github.com/altshiftab/jsonschema/pkg/types/schema"
 )
 
 var _ = validator.ValidateTrue // avoid warning if we don't use validator below
 
 var (
-	vocabularyKeyword = types.Keyword{
+	vocabularyKeyword = schema.Keyword{
 		Name:      "$vocabulary",
-		ArgType:   types.ArgTypeAny,
+		ArgType:   arg_type.ArgTypeAny,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
-	idKeyword = types.Keyword{
+	idKeyword = schema.Keyword{
 		Name:      "$id",
-		ArgType:   types.ArgTypeString,
+		ArgType:   arg_type.ArgTypeString,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
-	anchorKeyword = types.Keyword{
+	anchorKeyword = schema.Keyword{
 		Name:      "$anchor",
-		ArgType:   types.ArgTypeString,
+		ArgType:   arg_type.ArgTypeString,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
-	dynamicAnchorKeyword = types.Keyword{
+	dynamicAnchorKeyword = schema.Keyword{
 		Name:      "$dynamicAnchor",
-		ArgType:   types.ArgTypeString,
+		ArgType:   arg_type.ArgTypeString,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
-	refKeyword = types.Keyword{
+	refKeyword = schema.Keyword{
 		Name:      "$ref",
-		ArgType:   types.ArgTypeString,
+		ArgType:   arg_type.ArgTypeString,
 		Validate:  validator.ArgTypeString(validateRef),
 		Generated: false,
 	}
 
-	dynamicRefKeyword = types.Keyword{
+	dynamicRefKeyword = schema.Keyword{
 		Name:      "$dynamicRef",
-		ArgType:   types.ArgTypeString,
+		ArgType:   arg_type.ArgTypeString,
 		Validate:  validator.ArgTypeString(validateDynamicRef),
 		Generated: false,
 	}
 
-	defsKeyword = types.Keyword{
+	defsKeyword = schema.Keyword{
 		Name:      "$defs",
-		ArgType:   types.ArgTypeMapSchema,
+		ArgType:   arg_type.ArgTypeMapSchema,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
-	commentKeyword = types.Keyword{
+	commentKeyword = schema.Keyword{
 		Name:      "$comment",
-		ArgType:   types.ArgTypeString,
+		ArgType:   arg_type.ArgTypeString,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 )
 
 var (
-	allOfKeyword = types.Keyword{
+	allOfKeyword = schema.Keyword{
 		Name:      "allOf",
-		ArgType:   types.ArgTypeSchemas,
+		ArgType:   arg_type.ArgTypeSchemas,
 		Validate:  validator.ArgTypeSchemas(validator.ValidateAllOf),
 		Generated: false,
 	}
 
-	anyOfKeyword = types.Keyword{
+	anyOfKeyword = schema.Keyword{
 		Name:      "anyOf",
-		ArgType:   types.ArgTypeSchemas,
+		ArgType:   arg_type.ArgTypeSchemas,
 		Validate:  validator.ArgTypeSchemas(validator.ValidateAnyOf),
 		Generated: false,
 	}
 
-	oneOfKeyword = types.Keyword{
+	oneOfKeyword = schema.Keyword{
 		Name:      "oneOf",
-		ArgType:   types.ArgTypeSchemas,
+		ArgType:   arg_type.ArgTypeSchemas,
 		Validate:  validator.ArgTypeSchemas(validator.ValidateOneOf),
 		Generated: false,
 	}
 
-	notKeyword = types.Keyword{
+	notKeyword = schema.Keyword{
 		Name:      "not",
-		ArgType:   types.ArgTypeSchema,
+		ArgType:   arg_type.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidateNot),
 		Generated: false,
 	}
 
-	ifKeyword = types.Keyword{
+	ifKeyword = schema.Keyword{
 		Name:      "if",
-		ArgType:   types.ArgTypeSchema,
+		ArgType:   arg_type.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidateIf),
 		Generated: false,
 	}
 
-	thenKeyword = types.Keyword{
+	thenKeyword = schema.Keyword{
 		Name:      "then",
-		ArgType:   types.ArgTypeSchema,
+		ArgType:   arg_type.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidateThen),
 		Generated: false,
 	}
 
-	elseKeyword = types.Keyword{
+	elseKeyword = schema.Keyword{
 		Name:      "else",
-		ArgType:   types.ArgTypeSchema,
+		ArgType:   arg_type.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidateElse),
 		Generated: false,
 	}
 
-	dependentSchemasKeyword = types.Keyword{
+	dependentSchemasKeyword = schema.Keyword{
 		Name:      "dependentSchemas",
-		ArgType:   types.ArgTypeMapSchema,
+		ArgType:   arg_type.ArgTypeMapSchema,
 		Validate:  validator.ArgTypeMapSchema(validator.ValidateDependentSchemas),
 		Generated: false,
 	}
 
-	prefixItemsKeyword = types.Keyword{
+	prefixItemsKeyword = schema.Keyword{
 		Name:      "prefixItems",
-		ArgType:   types.ArgTypeSchemas,
+		ArgType:   arg_type.ArgTypeSchemas,
 		Validate:  validator.ArgTypeSchemas(validator.ValidatePrefixItems),
 		Generated: false,
 	}
 
-	itemsKeyword = types.Keyword{
+	itemsKeyword = schema.Keyword{
 		Name:      "items",
-		ArgType:   types.ArgTypeSchema,
+		ArgType:   arg_type.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidateItems),
 		Generated: false,
 	}
 
-	containsKeyword = types.Keyword{
+	containsKeyword = schema.Keyword{
 		Name:      "contains",
-		ArgType:   types.ArgTypeSchema,
+		ArgType:   arg_type.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidateContains),
 		Generated: false,
 	}
 
-	propertiesKeyword = types.Keyword{
+	propertiesKeyword = schema.Keyword{
 		Name:      "properties",
-		ArgType:   types.ArgTypeMapSchema,
+		ArgType:   arg_type.ArgTypeMapSchema,
 		Validate:  validator.ArgTypeMapSchema(validator.ValidateProperties),
 		Generated: false,
 	}
 
-	patternPropertiesKeyword = types.Keyword{
+	patternPropertiesKeyword = schema.Keyword{
 		Name:      "patternProperties",
-		ArgType:   types.ArgTypeMapSchema,
+		ArgType:   arg_type.ArgTypeMapSchema,
 		Validate:  validator.ArgTypeMapSchema(validator.ValidatePatternProperties),
 		Generated: false,
 	}
 
-	additionalPropertiesKeyword = types.Keyword{
+	additionalPropertiesKeyword = schema.Keyword{
 		Name:      "additionalProperties",
-		ArgType:   types.ArgTypeSchema,
+		ArgType:   arg_type.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidateAdditionalProperties),
 		Generated: false,
 	}
 
-	propertyNamesKeyword = types.Keyword{
+	propertyNamesKeyword = schema.Keyword{
 		Name:      "propertyNames",
-		ArgType:   types.ArgTypeSchema,
+		ArgType:   arg_type.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidatePropertyNames),
 		Generated: false,
 	}
 
-	unevaluatedItemsKeyword = types.Keyword{
+	unevaluatedItemsKeyword = schema.Keyword{
 		Name:      "unevaluatedItems",
-		ArgType:   types.ArgTypeSchema,
+		ArgType:   arg_type.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidateUnevaluatedItems),
 		Generated: false,
 	}
 
-	unevaluatedPropertiesKeyword = types.Keyword{
+	unevaluatedPropertiesKeyword = schema.Keyword{
 		Name:      "unevaluatedProperties",
-		ArgType:   types.ArgTypeSchema,
+		ArgType:   arg_type.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidateUnevaluatedProperties),
 		Generated: false,
 	}
 
-	typeKeyword = types.Keyword{
+	typeKeyword = schema.Keyword{
 		Name:      "type",
-		ArgType:   types.ArgTypeStringOrStrings,
+		ArgType:   arg_type.ArgTypeStringOrStrings,
 		Validate:  validator.ArgTypeStringOrStrings(validator.ValidateType),
 		Generated: false,
 	}
 
-	enumKeyword = types.Keyword{
+	enumKeyword = schema.Keyword{
 		Name:      "enum",
-		ArgType:   types.ArgTypeAny,
+		ArgType:   arg_type.ArgTypeAny,
 		Validate:  validator.ArgTypeAny(validator.ValidateEnum),
 		Generated: false,
 	}
 
-	constKeyword = types.Keyword{
+	constKeyword = schema.Keyword{
 		Name:      "const",
-		ArgType:   types.ArgTypeAny,
+		ArgType:   arg_type.ArgTypeAny,
 		Validate:  validator.ArgTypeAny(validator.ValidateConst),
 		Generated: false,
 	}
 
-	multipleOfKeyword = types.Keyword{
+	multipleOfKeyword = schema.Keyword{
 		Name:      "multipleOf",
-		ArgType:   types.ArgTypeFloat,
+		ArgType:   arg_type.ArgTypeFloat,
 		Validate:  validator.ArgTypeFloat(validator.ValidateMultipleOf),
 		Generated: false,
 	}
 
-	maximumKeyword = types.Keyword{
+	maximumKeyword = schema.Keyword{
 		Name:      "maximum",
-		ArgType:   types.ArgTypeFloat,
+		ArgType:   arg_type.ArgTypeFloat,
 		Validate:  validator.ArgTypeFloat(validator.ValidateMaximum),
 		Generated: false,
 	}
 
-	exclusiveMaximumKeyword = types.Keyword{
+	exclusiveMaximumKeyword = schema.Keyword{
 		Name:      "exclusiveMaximum",
-		ArgType:   types.ArgTypeFloat,
+		ArgType:   arg_type.ArgTypeFloat,
 		Validate:  validator.ArgTypeFloat(validator.ValidateExclusiveMaximum),
 		Generated: false,
 	}
 
-	minimumKeyword = types.Keyword{
+	minimumKeyword = schema.Keyword{
 		Name:      "minimum",
-		ArgType:   types.ArgTypeFloat,
+		ArgType:   arg_type.ArgTypeFloat,
 		Validate:  validator.ArgTypeFloat(validator.ValidateMinimum),
 		Generated: false,
 	}
 
-	exclusiveMinimumKeyword = types.Keyword{
+	exclusiveMinimumKeyword = schema.Keyword{
 		Name:      "exclusiveMinimum",
-		ArgType:   types.ArgTypeFloat,
+		ArgType:   arg_type.ArgTypeFloat,
 		Validate:  validator.ArgTypeFloat(validator.ValidateExclusiveMinimum),
 		Generated: false,
 	}
 
-	maxLengthKeyword = types.Keyword{
+	maxLengthKeyword = schema.Keyword{
 		Name:      "maxLength",
-		ArgType:   types.ArgTypeInt,
+		ArgType:   arg_type.ArgTypeInt,
 		Validate:  validator.ArgTypeInt(validator.ValidateMaxLength),
 		Generated: false,
 	}
 
-	minLengthKeyword = types.Keyword{
+	minLengthKeyword = schema.Keyword{
 		Name:      "minLength",
-		ArgType:   types.ArgTypeInt,
+		ArgType:   arg_type.ArgTypeInt,
 		Validate:  validator.ArgTypeInt(validator.ValidateMinLength),
 		Generated: false,
 	}
 
-	patternKeyword = types.Keyword{
+	patternKeyword = schema.Keyword{
 		Name:      "pattern",
-		ArgType:   types.ArgTypeString,
+		ArgType:   arg_type.ArgTypeString,
 		Validate:  validator.ArgTypeString(validator.ValidatePattern),
 		Generated: false,
 	}
 
-	maxItemsKeyword = types.Keyword{
+	maxItemsKeyword = schema.Keyword{
 		Name:      "maxItems",
-		ArgType:   types.ArgTypeInt,
+		ArgType:   arg_type.ArgTypeInt,
 		Validate:  validator.ArgTypeInt(validator.ValidateMaxItems),
 		Generated: false,
 	}
 
-	minItemsKeyword = types.Keyword{
+	minItemsKeyword = schema.Keyword{
 		Name:      "minItems",
-		ArgType:   types.ArgTypeInt,
+		ArgType:   arg_type.ArgTypeInt,
 		Validate:  validator.ArgTypeInt(validator.ValidateMinItems),
 		Generated: false,
 	}
 
-	uniqueItemsKeyword = types.Keyword{
+	uniqueItemsKeyword = schema.Keyword{
 		Name:      "uniqueItems",
-		ArgType:   types.ArgTypeBool,
+		ArgType:   arg_type.ArgTypeBool,
 		Validate:  validator.ArgTypeBool(validator.ValidateUniqueItems),
 		Generated: false,
 	}
 
-	maxContainsKeyword = types.Keyword{
+	maxContainsKeyword = schema.Keyword{
 		Name:      "maxContains",
-		ArgType:   types.ArgTypeInt,
+		ArgType:   arg_type.ArgTypeInt,
 		Validate:  validator.ArgTypeInt(validator.ValidateMaxContains),
 		Generated: false,
 	}
 
-	minContainsKeyword = types.Keyword{
+	minContainsKeyword = schema.Keyword{
 		Name:      "minContains",
-		ArgType:   types.ArgTypeInt,
+		ArgType:   arg_type.ArgTypeInt,
 		Validate:  validator.ArgTypeInt(validator.ValidateMinContains),
 		Generated: false,
 	}
 
-	maxPropertiesKeyword = types.Keyword{
+	maxPropertiesKeyword = schema.Keyword{
 		Name:      "maxProperties",
-		ArgType:   types.ArgTypeInt,
+		ArgType:   arg_type.ArgTypeInt,
 		Validate:  validator.ArgTypeInt(validator.ValidateMaxProperties),
 		Generated: false,
 	}
 
-	minPropertiesKeyword = types.Keyword{
+	minPropertiesKeyword = schema.Keyword{
 		Name:      "minProperties",
-		ArgType:   types.ArgTypeInt,
+		ArgType:   arg_type.ArgTypeInt,
 		Validate:  validator.ArgTypeInt(validator.ValidateMinProperties),
 		Generated: false,
 	}
 
-	requiredKeyword = types.Keyword{
+	requiredKeyword = schema.Keyword{
 		Name:      "required",
-		ArgType:   types.ArgTypeStrings,
+		ArgType:   arg_type.ArgTypeStrings,
 		Validate:  validator.ArgTypeStrings(validator.ValidateRequired),
 		Generated: false,
 	}
 
-	dependentRequiredKeyword = types.Keyword{
+	dependentRequiredKeyword = schema.Keyword{
 		Name:      "dependentRequired",
-		ArgType:   types.ArgTypeAny,
+		ArgType:   arg_type.ArgTypeAny,
 		Validate:  validator.ArgTypeAny(validator.ValidateDependentRequired),
 		Generated: false,
 	}
 
-	formatKeyword = types.Keyword{
+	formatKeyword = schema.Keyword{
 		Name:      "format",
-		ArgType:   types.ArgTypeString,
+		ArgType:   arg_type.ArgTypeString,
 		Validate:  validator.ArgTypeString(validator.ValidateFormat),
 		Generated: false,
 	}
 
-	contentEncodingKeyword = types.Keyword{
+	contentEncodingKeyword = schema.Keyword{
 		Name:      "contentEncoding",
-		ArgType:   types.ArgTypeString,
+		ArgType:   arg_type.ArgTypeString,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
-	contentMediaTypeKeyword = types.Keyword{
+	contentMediaTypeKeyword = schema.Keyword{
 		Name:      "contentMediaType",
-		ArgType:   types.ArgTypeString,
+		ArgType:   arg_type.ArgTypeString,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
-	contentSchemaKeyword = types.Keyword{
+	contentSchemaKeyword = schema.Keyword{
 		Name:      "contentSchema",
-		ArgType:   types.ArgTypeSchema,
+		ArgType:   arg_type.ArgTypeSchema,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
-	titleKeyword = types.Keyword{
+	titleKeyword = schema.Keyword{
 		Name:      "title",
-		ArgType:   types.ArgTypeString,
+		ArgType:   arg_type.ArgTypeString,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
-	descriptionKeyword = types.Keyword{
+	descriptionKeyword = schema.Keyword{
 		Name:      "description",
-		ArgType:   types.ArgTypeString,
+		ArgType:   arg_type.ArgTypeString,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
-	defaultKeyword = types.Keyword{
+	defaultKeyword = schema.Keyword{
 		Name:      "default",
-		ArgType:   types.ArgTypeAny,
+		ArgType:   arg_type.ArgTypeAny,
 		Validate:  validator.ArgTypeAny(validator.ValidateDefault),
 		Generated: false,
 	}
 
-	deprecatedKeyword = types.Keyword{
+	deprecatedKeyword = schema.Keyword{
 		Name:      "deprecated",
-		ArgType:   types.ArgTypeBool,
+		ArgType:   arg_type.ArgTypeBool,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
-	readOnlyKeyword = types.Keyword{
+	readOnlyKeyword = schema.Keyword{
 		Name:      "readOnly",
-		ArgType:   types.ArgTypeBool,
+		ArgType:   arg_type.ArgTypeBool,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
-	writeOnlyKeyword = types.Keyword{
+	writeOnlyKeyword = schema.Keyword{
 		Name:      "writeOnly",
-		ArgType:   types.ArgTypeBool,
+		ArgType:   arg_type.ArgTypeBool,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
-	examplesKeyword = types.Keyword{
+	examplesKeyword = schema.Keyword{
 		Name:      "examples",
-		ArgType:   types.ArgTypeAny,
+		ArgType:   arg_type.ArgTypeAny,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
-	dependenciesKeyword = types.Keyword{
+	dependenciesKeyword = schema.Keyword{
 		Name:      "dependencies",
-		ArgType:   types.ArgTypeMapArrayOrSchema,
+		ArgType:   arg_type.ArgTypeMapArrayOrSchema,
 		Validate:  validator.ArgTypeMapArrayOrSchema(validator.ValidateDependencies),
 		Generated: false,
 	}
 )
 
 // keywordMap maps keyword names to [types.Keyword] values.
-var keywordMap = map[string]*types.Keyword{
+var keywordMap = map[string]*schema.Keyword{
 	"$vocabulary":           &vocabularyKeyword,
 	"$id":                   &idKeyword,
 	"$anchor":               &anchorKeyword,
@@ -480,67 +481,67 @@ var keywordMap = map[string]*types.Keyword{
 }
 
 // AddBool adds a keyword with an argument of type Bool.
-func (b *Builder) AddBool(keyword *types.Keyword, v bool) *Builder {
+func (b *Builder) AddBool(keyword *schema.Keyword, v bool) *Builder {
 	b.b = b.b.AddBool(keyword, v)
 	return b
 }
 
 // AddString adds a keyword with an argument of type String.
-func (b *Builder) AddString(keyword *types.Keyword, v string) *Builder {
+func (b *Builder) AddString(keyword *schema.Keyword, v string) *Builder {
 	b.b = b.b.AddString(keyword, v)
 	return b
 }
 
 // AddStrings adds a keyword with an argument of type Strings.
-func (b *Builder) AddStrings(keyword *types.Keyword, v []string) *Builder {
+func (b *Builder) AddStrings(keyword *schema.Keyword, v []string) *Builder {
 	b.b = b.b.AddStrings(keyword, v)
 	return b
 }
 
 // AddInt adds a keyword with an argument of type Int.
-func (b *Builder) AddInt(keyword *types.Keyword, v int64) *Builder {
+func (b *Builder) AddInt(keyword *schema.Keyword, v int64) *Builder {
 	b.b = b.b.AddInt(keyword, v)
 	return b
 }
 
 // AddFloat adds a keyword with an argument of type Float.
-func (b *Builder) AddFloat(keyword *types.Keyword, v float64) *Builder {
+func (b *Builder) AddFloat(keyword *schema.Keyword, v float64) *Builder {
 	b.b = b.b.AddFloat(keyword, v)
 	return b
 }
 
 // AddSchema adds a keyword with an argument of type Schema.
-func (b *Builder) AddSchema(keyword *types.Keyword, v *types.Schema) *Builder {
+func (b *Builder) AddSchema(keyword *schema.Keyword, v *schema.Schema) *Builder {
 	b.b = b.b.AddSchema(keyword, v)
 	return b
 }
 
 // AddSchemas adds a keyword with an argument of type Schemas.
-func (b *Builder) AddSchemas(keyword *types.Keyword, v []*types.Schema) *Builder {
+func (b *Builder) AddSchemas(keyword *schema.Keyword, v []*schema.Schema) *Builder {
 	b.b = b.b.AddSchemas(keyword, v)
 	return b
 }
 
 // AddMapSchema adds a keyword with an argument of type MapSchema.
-func (b *Builder) AddMapSchema(keyword *types.Keyword, v map[string]*types.Schema) *Builder {
+func (b *Builder) AddMapSchema(keyword *schema.Keyword, v map[string]*schema.Schema) *Builder {
 	b.b = b.b.AddMapSchema(keyword, v)
 	return b
 }
 
 // AddSchemaOrSchemas adds a keyword with an argument of type SchemaOrSchemas.
-func (b *Builder) AddSchemaOrSchemas(keyword *types.Keyword, v types.PartSchemaOrSchemas) *Builder {
+func (b *Builder) AddSchemaOrSchemas(keyword *schema.Keyword, v schema.PartSchemaOrSchemas) *Builder {
 	b.b = b.b.AddSchemaOrSchemas(keyword, v)
 	return b
 }
 
 // AddMapArrayOrSchema adds a keyword with an argument of type MapArrayOrSchema.
-func (b *Builder) AddMapArrayOrSchema(keyword *types.Keyword, v map[string]types.ArrayOrSchema) *Builder {
+func (b *Builder) AddMapArrayOrSchema(keyword *schema.Keyword, v map[string]schema.ArrayOrSchema) *Builder {
 	b.b = b.b.AddMapArrayOrSchema(keyword, v)
 	return b
 }
 
 // AddAny adds a keyword with an argument of type Any.
-func (b *Builder) AddAny(keyword *types.Keyword, v any) *Builder {
+func (b *Builder) AddAny(keyword *schema.Keyword, v any) *Builder {
 	b.b = b.b.AddAny(keyword, v)
 	return b
 }
@@ -551,87 +552,87 @@ func (b *Builder) AddComment(arg string) *Builder {
 }
 
 // AddAllOf adds the allOf keyword to the schema.
-func (b *Builder) AddAllOf(arg []*types.Schema) *Builder {
+func (b *Builder) AddAllOf(arg []*schema.Schema) *Builder {
 	return b.AddSchemas(&allOfKeyword, arg)
 }
 
 // AddAnyOf adds the anyOf keyword to the schema.
-func (b *Builder) AddAnyOf(arg []*types.Schema) *Builder {
+func (b *Builder) AddAnyOf(arg []*schema.Schema) *Builder {
 	return b.AddSchemas(&anyOfKeyword, arg)
 }
 
 // AddOneOf adds the oneOf keyword to the schema.
-func (b *Builder) AddOneOf(arg []*types.Schema) *Builder {
+func (b *Builder) AddOneOf(arg []*schema.Schema) *Builder {
 	return b.AddSchemas(&oneOfKeyword, arg)
 }
 
 // AddNot adds the not keyword to the schema.
-func (b *Builder) AddNot(arg *types.Schema) *Builder {
+func (b *Builder) AddNot(arg *schema.Schema) *Builder {
 	return b.AddSchema(&notKeyword, arg)
 }
 
 // AddIf adds the if keyword to the schema.
-func (b *Builder) AddIf(arg *types.Schema) *Builder {
+func (b *Builder) AddIf(arg *schema.Schema) *Builder {
 	return b.AddSchema(&ifKeyword, arg)
 }
 
 // AddThen adds the then keyword to the schema.
-func (b *Builder) AddThen(arg *types.Schema) *Builder {
+func (b *Builder) AddThen(arg *schema.Schema) *Builder {
 	return b.AddSchema(&thenKeyword, arg)
 }
 
 // AddElse adds the else keyword to the schema.
-func (b *Builder) AddElse(arg *types.Schema) *Builder {
+func (b *Builder) AddElse(arg *schema.Schema) *Builder {
 	return b.AddSchema(&elseKeyword, arg)
 }
 
 // AddDependentSchemas adds the dependentSchemas keyword to the schema.
-func (b *Builder) AddDependentSchemas(arg map[string]*types.Schema) *Builder {
+func (b *Builder) AddDependentSchemas(arg map[string]*schema.Schema) *Builder {
 	return b.AddMapSchema(&dependentSchemasKeyword, arg)
 }
 
 // AddPrefixItems adds the prefixItems keyword to the schema.
-func (b *Builder) AddPrefixItems(arg []*types.Schema) *Builder {
+func (b *Builder) AddPrefixItems(arg []*schema.Schema) *Builder {
 	return b.AddSchemas(&prefixItemsKeyword, arg)
 }
 
 // AddItems adds the items keyword to the schema.
-func (b *Builder) AddItems(arg *types.Schema) *Builder {
+func (b *Builder) AddItems(arg *schema.Schema) *Builder {
 	return b.AddSchema(&itemsKeyword, arg)
 }
 
 // AddContains adds the contains keyword to the schema.
-func (b *Builder) AddContains(arg *types.Schema) *Builder {
+func (b *Builder) AddContains(arg *schema.Schema) *Builder {
 	return b.AddSchema(&containsKeyword, arg)
 }
 
 // AddProperties adds the properties keyword to the schema.
-func (b *Builder) AddProperties(arg map[string]*types.Schema) *Builder {
+func (b *Builder) AddProperties(arg map[string]*schema.Schema) *Builder {
 	return b.AddMapSchema(&propertiesKeyword, arg)
 }
 
 // AddPatternProperties adds the patternProperties keyword to the schema.
-func (b *Builder) AddPatternProperties(arg map[string]*types.Schema) *Builder {
+func (b *Builder) AddPatternProperties(arg map[string]*schema.Schema) *Builder {
 	return b.AddMapSchema(&patternPropertiesKeyword, arg)
 }
 
 // AddAdditionalProperties adds the additionalProperties keyword to the schema.
-func (b *Builder) AddAdditionalProperties(arg *types.Schema) *Builder {
+func (b *Builder) AddAdditionalProperties(arg *schema.Schema) *Builder {
 	return b.AddSchema(&additionalPropertiesKeyword, arg)
 }
 
 // AddPropertyNames adds the propertyNames keyword to the schema.
-func (b *Builder) AddPropertyNames(arg *types.Schema) *Builder {
+func (b *Builder) AddPropertyNames(arg *schema.Schema) *Builder {
 	return b.AddSchema(&propertyNamesKeyword, arg)
 }
 
 // AddUnevaluatedItems adds the unevaluatedItems keyword to the schema.
-func (b *Builder) AddUnevaluatedItems(arg *types.Schema) *Builder {
+func (b *Builder) AddUnevaluatedItems(arg *schema.Schema) *Builder {
 	return b.AddSchema(&unevaluatedItemsKeyword, arg)
 }
 
 // AddUnevaluatedProperties adds the unevaluatedProperties keyword to the schema.
-func (b *Builder) AddUnevaluatedProperties(arg *types.Schema) *Builder {
+func (b *Builder) AddUnevaluatedProperties(arg *schema.Schema) *Builder {
 	return b.AddSchema(&unevaluatedPropertiesKeyword, arg)
 }
 
@@ -755,7 +756,7 @@ func (b *Builder) AddContentMediaType(arg string) *Builder {
 }
 
 // AddContentSchema adds the contentSchema keyword to the schema.
-func (b *Builder) AddContentSchema(arg *types.Schema) *Builder {
+func (b *Builder) AddContentSchema(arg *schema.Schema) *Builder {
 	return b.AddSchema(&contentSchemaKeyword, arg)
 }
 
@@ -795,7 +796,7 @@ func (b *Builder) AddExamples(arg any) *Builder {
 }
 
 // AddDependencies adds the dependencies keyword to the schema.
-func (b *Builder) AddDependencies(arg map[string]types.ArrayOrSchema) *Builder {
+func (b *Builder) AddDependencies(arg map[string]schema.ArrayOrSchema) *Builder {
 	return b.AddMapArrayOrSchema(&dependenciesKeyword, arg)
 }
 

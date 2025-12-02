@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/altshiftab/jsonschema/internal/schemacache"
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/schema"
 )
 
 // metaCacahe is a cache of the meta-schemas.
@@ -22,7 +22,7 @@ var metaCache schemacache.ConcurrentCache
 // and loads it if it does. If usr is not a meta-schema,
 // this returns nil, nil. metaFS is for schemaID,
 // and prefix is the filename prefix.
-func Load(schemaID, prefix string, metaFS *embed.FS, uri *url.URL, ropts *types.ResolveOpts) (*types.Schema, error) {
+func Load(schemaID, prefix string, metaFS *embed.FS, uri *url.URL, ropts *schema.ResolveOpts) (*schema.Schema, error) {
 	if uri.Scheme != "http" && uri.Scheme != "https" {
 		return nil, nil
 	}
@@ -43,7 +43,7 @@ func Load(schemaID, prefix string, metaFS *embed.FS, uri *url.URL, ropts *types.
 		return nil, fmt.Errorf("can't find meta-schema URI %q: %v", uri, err)
 	}
 
-	var s types.Schema
+	var s schema.Schema
 	if err := s.UnmarshalJSON(data); err != nil {
 		return nil, fmt.Errorf("can't parse meta-schema URI %q: %v", uri, err)
 	}

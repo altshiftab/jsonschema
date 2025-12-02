@@ -13,7 +13,7 @@ import (
 	"github.com/altshiftab/jsonschema/internal/schemacache"
 	"github.com/altshiftab/jsonschema/pkg/builder"
 	"github.com/altshiftab/jsonschema/pkg/jsonpointer"
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/schema"
 )
 
 // Builder is a JSON schema builder.
@@ -32,7 +32,7 @@ type Builder struct {
 // Use this to build an entirely new schema.
 func NewBuilder() *Builder {
 	b := &Builder{builder.New(Vocabulary)}
-	return b.AddString(&types.SchemaKeyword, SchemaID)
+	return b.AddString(&schema.SchemaKeyword, SchemaID)
 }
 
 // NewSubBuilder returns a [Builder] like [NewBuilder],
@@ -42,7 +42,7 @@ func NewSubBuilder() *Builder {
 }
 
 // Build returns a newly built schema.
-func (b *Builder) Build() *types.Schema {
+func (b *Builder) Build() *schema.Schema {
 	return b.b.Build()
 }
 
@@ -57,14 +57,14 @@ func (b *Builder) NewSubBuilder() *Builder {
 // If acceptAll is true the schema accepts all instance values,
 // if false it accepts none.
 // This is the JSON schema true and false values.
-func (b *Builder) BoolSchema(acceptAll bool) *types.Schema {
+func (b *Builder) BoolSchema(acceptAll bool) *schema.Schema {
 	b2 := b.NewSubBuilder()
-	b2.b.AddBool(&types.BoolKeyword, acceptAll)
+	b2.b.AddBool(&schema.BoolKeyword, acceptAll)
 	return b2.Build()
 }
 
 // AddSchemaParts adds a list of parts.
-func (b *Builder) AddSchemaParts(parts []types.Part) *Builder {
+func (b *Builder) AddSchemaParts(parts []schema.Part) *Builder {
 	b.b = b.b.AddSchemaParts(parts)
 	return b
 }
@@ -83,16 +83,16 @@ func InferType(b *Builder, typ reflect.Type, opts *builder.InferOpts) (*Builder,
 }
 
 // AddItemsSchema is for builder.Infer. Use the AddItems method instead.
-func (b *Builder) AddItemsSchema(s *types.Schema) *Builder {
+func (b *Builder) AddItemsSchema(s *schema.Schema) *Builder {
 	return b.AddItems(s)
 }
 
 // resolveState holds state during resolveSchema.
 type resolveState struct {
-	ropts   *types.ResolveOpts
-	root    *types.Schema
-	schemas map[*types.Schema]schemaData
-	uris    map[string]*types.Schema
+	ropts   *schema.ResolveOpts
+	root    *schema.Schema
+	schemas map[*schema.Schema]schemaData
+	uris    map[string]*schema.Schema
 	anchors map[string]anchorData
 	cache   schemacache.Cache
 }
@@ -104,7 +104,7 @@ type schemaData struct {
 
 // anchorData is information we keep for an anchor.
 type anchorData struct {
-	schema  *types.Schema
+	schema  *schema.Schema
 	dynamic bool // true for $dynamicAnchor
 }
 
@@ -122,7 +122,7 @@ func (si subInfo) Name() string {
 // resolveSchema is the Vocabulary.Resolve field.
 // It is called to resolve a schema decoded from JSON to
 // handle $ref and friends.
-func resolveSchema(schema *types.Schema, ropts *types.ResolveOpts) error {
+func resolveSchema(schema *schema.Schema, ropts *schema.ResolveOpts) error {
 	state := &resolveState{
 		ropts: ropts,
 		root:  schema,
@@ -135,7 +135,7 @@ func resolveSchema(schema *types.Schema, ropts *types.ResolveOpts) error {
 }
 
 // resolveRefSchema resolves a schema that may have a known URI.
-func resolveRefSchema(uri *url.URL, schema *types.Schema, state *resolveState) error {
+func resolveRefSchema(uri *url.URL, schema *schema.Schema, state *resolveState) error {
 	subData := subInfo{
 		uri: uri,
 	}
@@ -146,7 +146,7 @@ func resolveRefSchema(uri *url.URL, schema *types.Schema, state *resolveState) e
 }
 
 // resolveIDs finds the IDs and anchors in a schema.
-func resolveIDs(subSchema, base *types.Schema, state *resolveState, subData subInfo) error {
+func resolveIDs(subSchema, base *schema.Schema, state *resolveState, subData subInfo) error {
 	if subSchema == nil {
 		return nil
 	}
@@ -168,7 +168,7 @@ func resolveIDs(subSchema, base *types.Schema, state *resolveState, subData subI
 		case "$ref", "$dynamicRef":
 			// We need the URI when resolving references.
 			if state.schemas == nil {
-				state.schemas = make(map[*types.Schema]schemaData)
+				state.schemas = make(map[*schema.Schema]schemaData)
 			}
 			state.schemas[subSchema] = schemaData{uri: subData.uri}
 		}
@@ -196,15 +196,15 @@ func resolveIDs(subSchema, base *types.Schema, state *resolveState, subData subI
 				anchor: dynamicAnchor,
 				schema: subSchema,
 			}
-			recordDynamicAnchor := types.Part{
+			recordDynamicAnchor := schema.Part{
 				Keyword: &recordDynamicAnchorKeyword,
-				Value:   types.PartAny{val},
+				Value:   schema.PartAny{val},
 			}
-			base.Parts = append([]types.Part{recordDynamicAnchor}, base.Parts...)
+			base.Parts = append([]schema.Part{recordDynamicAnchor}, base.Parts...)
 			base.Parts = append(base.Parts,
-				types.Part{
+				schema.Part{
 					Keyword: &clearDynamicAnchorKeyword,
-					Value:   types.PartAny{val},
+					Value:   schema.PartAny{val},
 				},
 			)
 		}
@@ -224,8 +224,8 @@ func resolveIDs(subSchema, base *types.Schema, state *resolveState, subData subI
 }
 
 // resolveID handles the $id keyword when searching for anchors.
-func resolveID(subSchema *types.Schema, value types.PartValue, state *resolveState, subData subInfo) (error, subInfo) {
-	arg := value.(types.PartString)
+func resolveID(subSchema *schema.Schema, value schema.PartValue, state *resolveState, subData subInfo) (error, subInfo) {
+	arg := value.(schema.PartString)
 	uri, err := url.Parse(string(arg))
 	if err != nil {
 		return fmt.Errorf(`%s: failed to parse "$id" %q: %v`, subData.Name(), arg, err), subInfo{}
@@ -241,7 +241,7 @@ func resolveID(subSchema *types.Schema, value types.PartValue, state *resolveSta
 	}
 
 	if state.uris == nil {
-		state.uris = make(map[string]*types.Schema)
+		state.uris = make(map[string]*schema.Schema)
 	}
 	state.uris[newURI.String()] = subSchema
 
@@ -254,8 +254,8 @@ func resolveID(subSchema *types.Schema, value types.PartValue, state *resolveSta
 
 // resolveAnchor handles the $anchor and $dynamicAnchor keywords
 // when searching for anchors.
-func resolveAnchor(subSchema *types.Schema, dynamic bool, value types.PartValue, state *resolveState, subData subInfo) (string, error) {
-	anchor := string(value.(types.PartString))
+func resolveAnchor(subSchema *schema.Schema, dynamic bool, value schema.PartValue, state *resolveState, subData subInfo) (string, error) {
+	anchor := string(value.(schema.PartString))
 	if state.anchors == nil {
 		state.anchors = make(map[string]anchorData)
 	}
@@ -283,7 +283,7 @@ func resolveAnchor(subSchema *types.Schema, dynamic bool, value types.PartValue,
 }
 
 // resolveRefs resolves all $ref and $dynamicRef keywords in the schema.
-func resolveRefs(subSchema *types.Schema, state *resolveState, subData subInfo) error {
+func resolveRefs(subSchema *schema.Schema, state *resolveState, subData subInfo) error {
 	if subSchema == nil {
 		return nil
 	}
@@ -324,8 +324,8 @@ func resolveRefs(subSchema *types.Schema, state *resolveState, subData subInfo) 
 
 // resolveRef resolves a $ref or $dynamicRef in the schema.
 // We record the resolved reference using a magic keyword.
-func resolveRef(subSchema *types.Schema, dynamic bool, value types.PartValue, state *resolveState, subData subInfo) error {
-	ref := string(value.(types.PartString))
+func resolveRef(subSchema *schema.Schema, dynamic bool, value schema.PartValue, state *resolveState, subData subInfo) error {
+	ref := string(value.(schema.PartString))
 	refURI, err := url.Parse(ref)
 	if err != nil {
 		return err
@@ -348,7 +348,7 @@ func resolveRef(subSchema *types.Schema, dynamic bool, value types.PartValue, st
 		dynamicFrag = false
 	}
 
-	addRef := func(refSchema *types.Schema, detached bool) {
+	addRef := func(refSchema *schema.Schema, detached bool) {
 		resolvedKey := &resolvedRefKeyword
 		if dynamic {
 			resolvedKey = &resolvedDynamicRefKeyword
@@ -361,9 +361,9 @@ func resolveRef(subSchema *types.Schema, dynamic bool, value types.PartValue, st
 		}
 
 		subSchema.Parts = append(subSchema.Parts,
-			types.Part{
+			schema.Part{
 				Keyword: resolvedKey,
-				Value:   types.PartSchema{refSchema},
+				Value:   schema.PartSchema{refSchema},
 			},
 		)
 	}
@@ -405,7 +405,7 @@ func resolveRef(subSchema *types.Schema, dynamic bool, value types.PartValue, st
 }
 
 // resolveURI returns the schema for a URI.
-func resolveURI(refURI *url.URL, state *resolveState, subData subInfo) (*types.Schema, error) {
+func resolveURI(refURI *url.URL, state *resolveState, subData subInfo) (*schema.Schema, error) {
 	// The URI, ignoring the fragment, is either the empty string,
 	// meaning the root, or a reference to some $id elsewhere in
 	// the schema tree, or a URI to be loaded externally.

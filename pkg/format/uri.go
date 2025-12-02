@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/schema"
 )
 
 // uriOrIRI is an enum
@@ -22,17 +22,17 @@ const (
 )
 
 // uriFormat requires a valid URI.
-func uriFormat(instance any, state *types.ValidationState) error {
+func uriFormat(instance any, state *schema.ValidationState) error {
 	return uriIriFormat(instance, state, isURI)
 }
 
 // iriFormat requires a valid IRI.
-func iriFormat(instance any, state *types.ValidationState) error {
+func iriFormat(instance any, state *schema.ValidationState) error {
 	return uriIriFormat(instance, state, isIRI)
 }
 
 // uriIriFormat checks for a URI or IRI.
-func uriIriFormat(instance any, state *types.ValidationState, ui uriOrIRI) error {
+func uriIriFormat(instance any, state *schema.ValidationState, ui uriOrIRI) error {
 	s, ok := instance.(string)
 	if !ok {
 		return nil
@@ -53,17 +53,17 @@ func uriIriFormat(instance any, state *types.ValidationState, ui uriOrIRI) error
 }
 
 // uriReferenceFormat requires a valid URI, which may be a reference.
-func uriReferenceFormat(instance any, state *types.ValidationState) error {
+func uriReferenceFormat(instance any, state *schema.ValidationState) error {
 	return uriIriReferenceFormat(instance, state, isURI)
 }
 
 // iriReferenceFormat requires a valid URI, which may be a reference.
-func iriReferenceFormat(instance any, state *types.ValidationState) error {
+func iriReferenceFormat(instance any, state *schema.ValidationState) error {
 	return uriIriReferenceFormat(instance, state, isIRI)
 }
 
 // uriIriReferenceFormat checks for a URI or IRI, which may be a reference.
-func uriIriReferenceFormat(instance any, state *types.ValidationState, ui uriOrIRI) error {
+func uriIriReferenceFormat(instance any, state *schema.ValidationState, ui uriOrIRI) error {
 	s, ok := instance.(string)
 	if !ok {
 		return nil

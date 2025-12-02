@@ -12,13 +12,14 @@ import (
 	"strings"
 
 	"github.com/altshiftab/jsonschema/internal/argtype"
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/arg_type"
+	"github.com/altshiftab/jsonschema/pkg/types/schema"
 )
 
 // DerefSchema takes a JSON pointer and a root schema and returns
 // the schema to which the pointer refers.
 // The schemaID parameter is the default schema ID.
-func DerefSchema(schemaID string, root *types.Schema, pointer string) (*types.Schema, error) {
+func DerefSchema(schemaID string, root *schema.Schema, pointer string) (*schema.Schema, error) {
 	s := root
 	pointer = strings.TrimPrefix(pointer, "/")
 	toks := strings.Split(pointer, "/")
@@ -33,10 +34,10 @@ func DerefSchema(schemaID string, root *types.Schema, pointer string) (*types.Sc
 			}
 
 			switch part.Keyword.ArgType {
-			case types.ArgTypeSchema:
-				s = part.Value.(types.PartSchema).S
+			case arg_type.ArgTypeSchema:
+				s = part.Value.(schema.PartSchema).S
 
-			case types.ArgTypeSchemas:
+			case arg_type.ArgTypeSchemas:
 				i++
 				if i >= len(toks) {
 					return nil, fmt.Errorf("when dereferencing pointer %q expected array index after %q", pointer, tok)
@@ -46,27 +47,27 @@ func DerefSchema(schemaID string, root *types.Schema, pointer string) (*types.Sc
 				if err != nil {
 					return nil, fmt.Errorf("when dereferencing pointer %q got token %q, expected array index", pointer, tok)
 				}
-				schemas := part.Value.(types.PartSchemas)
+				schemas := part.Value.(schema.PartSchemas)
 				if idx < 0 || idx >= len(schemas) {
 					return nil, fmt.Errorf("when dereferencing pointer %q array index %d out of range (length %d)", pointer, idx, len(schemas))
 				}
 				s = schemas[idx]
 
-			case types.ArgTypeMapSchema:
+			case arg_type.ArgTypeMapSchema:
 				i++
 				if i >= len(toks) {
 					return nil, fmt.Errorf("when dereferencing pointer %q expected map key after %q", pointer, tok)
 				}
 				tok = decodeToken(toks[i])
-				m := part.Value.(types.PartMapSchema)
+				m := part.Value.(schema.PartMapSchema)
 				ms, ok := m[tok]
 				if !ok {
 					return nil, fmt.Errorf("when dereferencing pointer %q map key %q not present", pointer, tok)
 				}
 				s = ms
 
-			case types.ArgTypeSchemaOrSchemas:
-				pv := part.Value.(types.PartSchemaOrSchemas)
+			case arg_type.ArgTypeSchemaOrSchemas:
+				pv := part.Value.(schema.PartSchemaOrSchemas)
 				if pv.Schema != nil {
 					s = pv.Schema
 				} else {
@@ -85,13 +86,13 @@ func DerefSchema(schemaID string, root *types.Schema, pointer string) (*types.Sc
 					s = pv.Schemas[idx]
 				}
 
-			case types.ArgTypeMapArrayOrSchema:
+			case arg_type.ArgTypeMapArrayOrSchema:
 				i++
 				if i >= len(toks) {
 					return nil, fmt.Errorf("when dereferencing pointer %q expected map key after %q", pointer, tok)
 				}
 				tok = decodeToken(toks[i])
-				m := part.Value.(types.PartMapArrayOrSchema)
+				m := part.Value.(schema.PartMapArrayOrSchema)
 				mv, ok := m[tok]
 				if !ok {
 					return nil, fmt.Errorf("when dereferencing pointer %q map key %q not present", pointer, tok)
@@ -101,14 +102,14 @@ func DerefSchema(schemaID string, root *types.Schema, pointer string) (*types.Sc
 				}
 				s = mv.Schema
 
-			case types.ArgTypeAny:
-				pv := part.Value.(types.PartAny).V
+			case arg_type.ArgTypeAny:
+				pv := part.Value.(schema.PartAny).V
 			resolveLoop:
 				for {
 					switch v := pv.(type) {
 					case bool, map[string]any:
 						var err error
-						s, err = types.SchemaFromJSON(schemaID, nil, v)
+						s, err = schema.SchemaFromJSON(schemaID, nil, v)
 						if err != nil {
 							return nil, fmt.Errorf("when dereferencing pointer %q failed to resolve unrecognized schema: %v", pointer, err)
 						}

@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/schema"
 )
 
 // jsonPointerFormat requires a valid JSON pointer.
-func jsonPointerFormat(instance any, state *types.ValidationState) error {
+func jsonPointerFormat(instance any, state *schema.ValidationState) error {
 	s, ok := instance.(string)
 	if !ok {
 		return nil
@@ -31,7 +31,7 @@ func jsonPointerFormat(instance any, state *types.ValidationState) error {
 }
 
 // relativeJSONPointerFormat requires a valid relative JSON pointer.
-func relativeJSONPointerFormat(instance any, state *types.ValidationState) error {
+func relativeJSONPointerFormat(instance any, state *schema.ValidationState) error {
 	s, ok := instance.(string)
 	if !ok {
 		return nil

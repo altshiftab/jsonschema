@@ -9,12 +9,12 @@
 package draft202012
 
 import (
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/schema"
 )
 
 const SchemaID = "https://json-schema.org/draft/2020-12/schema"
 
-var Vocabulary = &types.Vocabulary{
+var Vocabulary = &schema.Vocabulary{
 	Name:     "draft2020-12",
 	Schema:   SchemaID,
 	Keywords: keywordMap,
@@ -23,5 +23,5 @@ var Vocabulary = &types.Vocabulary{
 }
 
 func init() {
-	types.RegisterVocabulary(Vocabulary, true)
+	schema.RegisterVocabulary(Vocabulary, true)
 }

@@ -19,31 +19,31 @@ import (
 
 	"github.com/altshiftab/jsonschema/internal/validerr"
 	"github.com/altshiftab/jsonschema/pkg/notes"
-	"github.com/altshiftab/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/types/schema"
 )
 
 // ToInt converts arg into a types.PartInt.
-func ToInt(arg types.PartValue) (types.PartInt, error) {
+func ToInt(arg schema.PartValue) (schema.PartInt, error) {
 	switch v := arg.(type) {
-	case types.PartInt:
+	case schema.PartInt:
 		return v, nil
-	case types.PartFloat:
+	case schema.PartFloat:
 		iv := math.Trunc(float64(v))
 		if iv != float64(v) {
 			return 0, fmt.Errorf("got float %v, expect int", arg)
 		}
-		return types.PartInt(int(iv)), nil
+		return schema.PartInt(int(iv)), nil
 	default:
 		return 0, fmt.Errorf("got %T, expect int", arg)
 	}
 }
 
 // ToFloat converts arg into a types.PartFloat.
-func ToFloat(arg types.PartValue) (types.PartFloat, error) {
+func ToFloat(arg schema.PartValue) (schema.PartFloat, error) {
 	switch v := arg.(type) {
-	case types.PartInt:
-		return types.PartFloat(v), nil
-	case types.PartFloat:
+	case schema.PartInt:
+		return schema.PartFloat(v), nil
+	case schema.PartFloat:
 		return v, nil
 	default:
 		return 0, fmt.Errorf("got %T, expect float", arg)
@@ -53,12 +53,12 @@ func ToFloat(arg types.PartValue) (types.PartFloat, error) {
 // ValidateTrue is used for keywords that always match.
 // These keywords have meaning for the schema, but don't affect
 // whether the schema validates an instance.
-func ValidateTrue(types.PartValue, any, *types.ValidationState) error {
+func ValidateTrue(schema.PartValue, any, *schema.ValidationState) error {
 	return nil
 }
 
 // ValidateAllOf implements the allOf keyword.
-func ValidateAllOf(arg types.PartSchemas, instance any, state *types.ValidationState) error {
+func ValidateAllOf(arg schema.PartSchemas, instance any, state *schema.ValidationState) error {
 	subState, err := state.Child()
 	if err != nil {
 		return err
@@ -85,7 +85,7 @@ func ValidateAllOf(arg types.PartSchemas, instance any, state *types.ValidationS
 }
 
 // ValidateAnyOf implements the anyOf keyword.
-func ValidateAnyOf(arg types.PartSchemas, instance any, state *types.ValidationState) error {
+func ValidateAnyOf(arg schema.PartSchemas, instance any, state *schema.ValidationState) error {
 	subState, err := state.Child()
 	if err != nil {
 		return err
@@ -120,7 +120,7 @@ func ValidateAnyOf(arg types.PartSchemas, instance any, state *types.ValidationS
 }
 
 // ValidateOneOf implements the oneOf keyword.
-func ValidateOneOf(arg types.PartSchemas, instance any, state *types.ValidationState) error {
+func ValidateOneOf(arg schema.PartSchemas, instance any, state *schema.ValidationState) error {
 	subState, err := state.Child()
 	if err != nil {
 		return err
@@ -153,7 +153,7 @@ func ValidateOneOf(arg types.PartSchemas, instance any, state *types.ValidationS
 }
 
 // ValidateNot implements the not keyword.
-func ValidateNot(arg types.PartSchema, instance any, state *types.ValidationState) error {
+func ValidateNot(arg schema.PartSchema, instance any, state *schema.ValidationState) error {
 	subState, err := state.Child()
 	if err != nil {
 		return err
@@ -174,7 +174,7 @@ func ValidateNot(arg types.PartSchema, instance any, state *types.ValidationStat
 
 // ValidateIf implements the if keyword.
 // This is always valid, but records a note for the "then" and "else" keywords.
-func ValidateIf(arg types.PartSchema, instance any, state *types.ValidationState) error {
+func ValidateIf(arg schema.PartSchema, instance any, state *schema.ValidationState) error {
 	subState, err := state.Child()
 	if err != nil {
 		return err
@@ -194,7 +194,7 @@ func ValidateIf(arg types.PartSchema, instance any, state *types.ValidationState
 }
 
 // ValidateThen implements the then keyword.
-func ValidateThen(arg types.PartSchema, instance any, state *types.ValidationState) error {
+func ValidateThen(arg schema.PartSchema, instance any, state *schema.ValidationState) error {
 	v, ok := state.Notes.Get("if")
 	if !ok || !v.(bool) {
 		return nil
@@ -213,7 +213,7 @@ func ValidateThen(arg types.PartSchema, instance any, state *types.ValidationSta
 }
 
 // ValidateElse implements the else keyword.
-func ValidateElse(arg types.PartSchema, instance any, state *types.ValidationState) error {
+func ValidateElse(arg schema.PartSchema, instance any, state *schema.ValidationState) error {
 	v, ok := state.Notes.Get("if")
 	if !ok || v.(bool) {
 		return nil
@@ -232,7 +232,7 @@ func ValidateElse(arg types.PartSchema, instance any, state *types.ValidationSta
 }
 
 // ValidateDependentSchemas implements the dependentSchemas keyword.
-func ValidateDependentSchemas(arg types.PartMapSchema, instance any, state *types.ValidationState) error {
+func ValidateDependentSchemas(arg schema.PartMapSchema, instance any, state *schema.ValidationState) error {
 	subState, err := state.Child()
 	if err != nil {
 		return err
@@ -266,11 +266,11 @@ func ValidateDependentSchemas(arg types.PartMapSchema, instance any, state *type
 // as prefixItems only affects items in the same types.
 type prefixItemsNote struct {
 	idx    int
-	schema *types.Schema
+	schema *schema.Schema
 }
 
 // ValidatePrefixItems implements the prefixItems keyword.
-func ValidatePrefixItems(arg types.PartSchemas, instance any, state *types.ValidationState) error {
+func ValidatePrefixItems(arg schema.PartSchemas, instance any, state *schema.ValidationState) error {
 	note := prefixItemsNote{
 		idx:    len(arg),
 		schema: state.Schema,
@@ -290,7 +290,7 @@ func ValidatePrefixItems(arg types.PartSchemas, instance any, state *types.Valid
 			if applyDefaults && reflect.ValueOf(val).IsZero() {
 				pv, hasDefault := s.LookupKeyword("default")
 				if hasDefault {
-					val = pv.(types.PartAny).V
+					val = pv.(schema.PartAny).V
 					a[i] = val
 				}
 			}
@@ -317,7 +317,7 @@ func ValidatePrefixItems(arg types.PartSchemas, instance any, state *types.Valid
 			if applyDefaults && indexVal.IsZero() {
 				pv, hasDefault := s.LookupKeyword("default")
 				if hasDefault {
-					defVal := pv.(types.PartAny).V
+					defVal := pv.(schema.PartAny).V
 					if err := setDefault(indexVal, defVal); err != nil {
 						return err
 					}
@@ -335,7 +335,7 @@ func ValidatePrefixItems(arg types.PartSchemas, instance any, state *types.Valid
 }
 
 // ValidateItems implements the items keyword.
-func ValidateItems(arg types.PartSchema, instance any, state *types.ValidationState) error {
+func ValidateItems(arg schema.PartSchema, instance any, state *schema.ValidationState) error {
 	idx := 0
 	if pins, ok := state.Notes.Get("prefixItems"); ok {
 		for _, pin := range pins.([]prefixItemsNote) {
@@ -382,14 +382,14 @@ func ValidateItems(arg types.PartSchema, instance any, state *types.ValidationSt
 }
 
 // ValidateContains implements the contains keyword.
-func ValidateContains(arg types.PartSchema, instance any, state *types.ValidationState) error {
+func ValidateContains(arg schema.PartSchema, instance any, state *schema.ValidationState) error {
 	// If there is a minContains keyword in the schema with value 0,
 	// then "contains" is always valid.
 	hasMinContainsZero := false
 	for i := state.Index + 1; i < len(state.Schema.Parts); i++ {
 		part := &state.Schema.Parts[i]
 		if part.Keyword.Name == "minContains" {
-			if i, ok := part.Value.(types.PartInt); ok {
+			if i, ok := part.Value.(schema.PartInt); ok {
 				if i == 0 {
 					hasMinContainsZero = true
 					break
@@ -442,17 +442,17 @@ func ValidateContains(arg types.PartSchema, instance any, state *types.Validatio
 // as additionalProperties looks for properties in the same types.
 type propertiesNote struct {
 	field  string
-	schema *types.Schema
+	schema *schema.Schema
 }
 
 // ValidateProperties implements the properties keyword.
-func ValidateProperties(arg types.PartMapSchema, instance any, state *types.ValidationState) error {
+func ValidateProperties(arg schema.PartMapSchema, instance any, state *schema.ValidationState) error {
 	applyDefaults := state.Opts != nil && state.Opts.ApplyDefaults
 
 	requiredPV, hasRequired := state.Schema.LookupKeyword("required")
-	var required types.PartStrings
+	var required schema.PartStrings
 	if hasRequired {
-		required = requiredPV.(types.PartStrings)
+		required = requiredPV.(schema.PartStrings)
 	}
 
 	m, isMap := instance.(map[string]any)
@@ -465,10 +465,10 @@ func ValidateProperties(arg types.PartMapSchema, instance any, state *types.Vali
 			hasDefault bool
 		)
 		if applyDefaults && !slices.Contains(required, name) {
-			var pv types.PartValue
+			var pv schema.PartValue
 			pv, hasDefault = s.LookupKeyword("default")
 			if hasDefault {
-				defaultVal = pv.(types.PartAny).V
+				defaultVal = pv.(schema.PartAny).V
 			}
 		}
 
@@ -519,7 +519,7 @@ func ValidateProperties(arg types.PartMapSchema, instance any, state *types.Vali
 		state.PushInstanceToken(jsonName)
 		if err := s.ValidateSubSchema(f, state); err != nil {
 			// Ensure nested errors carry instance location pointer.
-			err = types.EnsureInstanceLocation(err, state.InstancePointer())
+			err = schema.EnsureInstanceLocation(err, state.InstancePointer())
 			validerr.AddError(&topErr, err, "properties/"+name)
 		}
 		state.PopInstanceToken()
@@ -535,13 +535,13 @@ func ValidateProperties(arg types.PartMapSchema, instance any, state *types.Vali
 }
 
 // ValidatePatternProperties implements the patternProperties keyword.
-func ValidatePatternProperties(arg types.PartMapSchema, instance any, state *types.ValidationState) error {
+func ValidatePatternProperties(arg schema.PartMapSchema, instance any, state *schema.ValidationState) error {
 	// The argument is a mapping from regexp strings to schemas.
 	// Compile the regexp strings.
 	// TODO: Cache the regexp compilation somewhere?
 	type regexpSchema struct {
 		re *regexp.Regexp
-		s  *types.Schema
+		s  *schema.Schema
 	}
 	var res []regexpSchema
 	for reString, s := range arg {
@@ -585,7 +585,7 @@ func ValidatePatternProperties(arg types.PartMapSchema, instance any, state *typ
 }
 
 // ValidateAdditionalProperties implements the additionalProperties keyword.
-func ValidateAdditionalProperties(arg types.PartSchema, instance any, state *types.ValidationState) error {
+func ValidateAdditionalProperties(arg schema.PartSchema, instance any, state *schema.ValidationState) error {
 	names, ok := instanceFieldNames(instance)
 	if !ok {
 		return nil
@@ -622,7 +622,7 @@ func ValidateAdditionalProperties(arg types.PartSchema, instance any, state *typ
 }
 
 // ValidatePropertyNames implements the propertyNames keyword.
-func ValidatePropertyNames(arg types.PartSchema, instance any, state *types.ValidationState) error {
+func ValidatePropertyNames(arg schema.PartSchema, instance any, state *schema.ValidationState) error {
 	names, ok := instanceFieldNames(instance)
 	if !ok {
 		return nil
@@ -637,7 +637,7 @@ func ValidatePropertyNames(arg types.PartSchema, instance any, state *types.Vali
 }
 
 // ValidateUnevaluatedItems implements the unevaluatedItems keyword.
-func ValidateUnevaluatedItems(arg types.PartSchema, instance any, state *types.ValidationState) error {
+func ValidateUnevaluatedItems(arg schema.PartSchema, instance any, state *schema.ValidationState) error {
 	if b, ok := state.Notes.Get("items"); ok {
 		if b.(bool) {
 			return nil
@@ -703,7 +703,7 @@ func ValidateUnevaluatedItems(arg types.PartSchema, instance any, state *types.V
 }
 
 // ValidateUnevaluatedProperties implements the unevaluatedProperties keyword.
-func ValidateUnevaluatedProperties(arg types.PartSchema, instance any, state *types.ValidationState) error {
+func ValidateUnevaluatedProperties(arg schema.PartSchema, instance any, state *schema.ValidationState) error {
 	// Collect all the names seen by the properties or
 	// patternProperties or additionalProperties keywords.
 	// The keyword sorting order must ensure that unevaluatedProperties
@@ -743,7 +743,7 @@ func ValidateUnevaluatedProperties(arg types.PartSchema, instance any, state *ty
 }
 
 // ValidateType implements the type keyword.
-func ValidateType(arg types.PartStringOrStrings, instance any, state *types.ValidationState) error {
+func ValidateType(arg schema.PartStringOrStrings, instance any, state *schema.ValidationState) error {
 	match := func(typ string) (bool, error) {
 		switch typ {
 		case "null":
@@ -861,7 +861,7 @@ func ValidateType(arg types.PartStringOrStrings, instance any, state *types.Vali
 }
 
 // ValidateEnum implements the enum keyword.
-func ValidateEnum(arg types.PartAny, instance any, state *types.ValidationState) error {
+func ValidateEnum(arg schema.PartAny, instance any, state *schema.ValidationState) error {
 	// TODO: we have to be able to compare a map[string]any to a struct,
 	// and a []any to a slice of some other type.
 	s, ok := arg.V.([]any)
@@ -879,7 +879,7 @@ func ValidateEnum(arg types.PartAny, instance any, state *types.ValidationState)
 }
 
 // ValidateConst implements the const keyword.
-func ValidateConst(arg types.PartAny, instance any, state *types.ValidationState) error {
+func ValidateConst(arg schema.PartAny, instance any, state *schema.ValidationState) error {
 	// TODO: we have to be able to compare a map[string]any to a struct,
 	// and a []any to a slice of some other type.
 	if !reflect.DeepEqual(instance, arg.V) {
@@ -891,7 +891,7 @@ func ValidateConst(arg types.PartAny, instance any, state *types.ValidationState
 }
 
 // ValidateMultipleOf implements the multipleOf keyword.
-func ValidateMultipleOf(arg types.PartFloat, instance any, state *types.ValidationState) error {
+func ValidateMultipleOf(arg schema.PartFloat, instance any, state *schema.ValidationState) error {
 	f, ok := instanceFloat(instance)
 	if !ok {
 		return nil
@@ -906,12 +906,12 @@ func ValidateMultipleOf(arg types.PartFloat, instance any, state *types.Validati
 }
 
 // ValidateMaximum implements the maximum keyword.
-func ValidateMaximum(arg types.PartFloat, instance any, state *types.ValidationState) error {
+func ValidateMaximum(arg schema.PartFloat, instance any, state *schema.ValidationState) error {
 	f, ok := instanceFloat(instance)
 	if !ok {
 		return nil
 	}
-	if types.PartFloat(f) > arg {
+	if schema.PartFloat(f) > arg {
 		return &validerr.ValidationError{
 			Message: fmt.Sprintf(`value %v is larger than "maximum" limit %v`, instance, arg),
 		}
@@ -920,12 +920,12 @@ func ValidateMaximum(arg types.PartFloat, instance any, state *types.ValidationS
 }
 
 // ValidateExclusiveMaximum implements the exclusiveMaximum keyword.
-func ValidateExclusiveMaximum(arg types.PartFloat, instance any, state *types.ValidationState) error {
+func ValidateExclusiveMaximum(arg schema.PartFloat, instance any, state *schema.ValidationState) error {
 	f, ok := instanceFloat(instance)
 	if !ok {
 		return nil
 	}
-	if types.PartFloat(f) >= arg {
+	if schema.PartFloat(f) >= arg {
 		return &validerr.ValidationError{
 			Message: fmt.Sprintf(`value %v is larger than "exclusiveMaximum" limit %v`, instance, arg),
 		}
@@ -934,12 +934,12 @@ func ValidateExclusiveMaximum(arg types.PartFloat, instance any, state *types.Va
 }
 
 // ValidateMinimum implements the minimum keyword.
-func ValidateMinimum(arg types.PartFloat, instance any, state *types.ValidationState) error {
+func ValidateMinimum(arg schema.PartFloat, instance any, state *schema.ValidationState) error {
 	f, ok := instanceFloat(instance)
 	if !ok {
 		return nil
 	}
-	if types.PartFloat(f) < arg {
+	if schema.PartFloat(f) < arg {
 		return &validerr.ValidationError{
 			Message: fmt.Sprintf(`value %v is larger than "minimum" limit %v`, instance, arg),
 		}
@@ -948,12 +948,12 @@ func ValidateMinimum(arg types.PartFloat, instance any, state *types.ValidationS
 }
 
 // ValidateExclusiveMinimum implements the exclusiveMinimum keyword.
-func ValidateExclusiveMinimum(arg types.PartFloat, instance any, state *types.ValidationState) error {
+func ValidateExclusiveMinimum(arg schema.PartFloat, instance any, state *schema.ValidationState) error {
 	f, ok := instanceFloat(instance)
 	if !ok {
 		return nil
 	}
-	if types.PartFloat(f) <= arg {
+	if schema.PartFloat(f) <= arg {
 		return &validerr.ValidationError{
 			Message: fmt.Sprintf(`value %v is larger than "exclusiveMinimum" limit %v`, instance, arg),
 		}
@@ -962,12 +962,12 @@ func ValidateExclusiveMinimum(arg types.PartFloat, instance any, state *types.Va
 }
 
 // ValidateMaxLength implements the maxLength keyword.
-func ValidateMaxLength(arg types.PartInt, instance any, state *types.ValidationState) error {
+func ValidateMaxLength(arg schema.PartInt, instance any, state *schema.ValidationState) error {
 	if arg < 0 {
 		return fmt.Errorf(`"maxLength" argument is %d, must be non-negative`, arg)
 	}
 	if s, ok := instance.(string); ok {
-		if types.PartInt(utf8.RuneCountInString(s)) > arg {
+		if schema.PartInt(utf8.RuneCountInString(s)) > arg {
 			return &validerr.ValidationError{
 				Message: fmt.Sprintf(`value %q too long for "maxLength" argument %d`, s, arg),
 			}
@@ -977,12 +977,12 @@ func ValidateMaxLength(arg types.PartInt, instance any, state *types.ValidationS
 }
 
 // ValidateMinLength implements the minLength keyword.
-func ValidateMinLength(arg types.PartInt, instance any, state *types.ValidationState) error {
+func ValidateMinLength(arg schema.PartInt, instance any, state *schema.ValidationState) error {
 	if arg < 0 {
 		return fmt.Errorf(`"maxLength" argument is %d, must be non-negative`, arg)
 	}
 	if s, ok := instance.(string); ok {
-		if types.PartInt(utf8.RuneCountInString(s)) < arg {
+		if schema.PartInt(utf8.RuneCountInString(s)) < arg {
 			return &validerr.ValidationError{
 				Message: fmt.Sprintf(`value %q too short for "minLength" argument %d`, s, arg),
 			}
@@ -992,7 +992,7 @@ func ValidateMinLength(arg types.PartInt, instance any, state *types.ValidationS
 }
 
 // ValidatePattern implements the pattern keyword.
-func ValidatePattern(arg types.PartString, instance any, state *types.ValidationState) error {
+func ValidatePattern(arg schema.PartString, instance any, state *schema.ValidationState) error {
 	s, ok := instance.(string)
 	if !ok {
 		return nil
@@ -1013,7 +1013,7 @@ func ValidatePattern(arg types.PartString, instance any, state *types.Validation
 }
 
 // ValidateMaxItems implements the maxItems keyword.
-func ValidateMaxItems(arg types.PartInt, instance any, state *types.ValidationState) error {
+func ValidateMaxItems(arg schema.PartInt, instance any, state *schema.ValidationState) error {
 	var ln int
 	if a, ok := instance.([]any); ok {
 		ln = len(a)
@@ -1025,7 +1025,7 @@ func ValidateMaxItems(arg types.PartInt, instance any, state *types.ValidationSt
 		ln = v.Len()
 	}
 
-	if types.PartInt(ln) > arg {
+	if schema.PartInt(ln) > arg {
 		return &validerr.ValidationError{
 			Message: fmt.Sprintf(`length %d too long for "maxItems" argument %d`, ln, arg),
 		}
@@ -1035,7 +1035,7 @@ func ValidateMaxItems(arg types.PartInt, instance any, state *types.ValidationSt
 }
 
 // ValidateMinItems implements the minItems keyword.
-func ValidateMinItems(arg types.PartInt, instance any, state *types.ValidationState) error {
+func ValidateMinItems(arg schema.PartInt, instance any, state *schema.ValidationState) error {
 	var ln int
 	if a, ok := instance.([]any); ok {
 		ln = len(a)
@@ -1047,7 +1047,7 @@ func ValidateMinItems(arg types.PartInt, instance any, state *types.ValidationSt
 		ln = v.Len()
 	}
 
-	if types.PartInt(ln) < arg {
+	if schema.PartInt(ln) < arg {
 		return &validerr.ValidationError{
 			Message: fmt.Sprintf(`length %d too short for "maxItems" argument %d`, ln, arg),
 		}
@@ -1057,7 +1057,7 @@ func ValidateMinItems(arg types.PartInt, instance any, state *types.ValidationSt
 }
 
 // ValidateUniqueItems implements the uniqueItems keyword.
-func ValidateUniqueItems(arg types.PartBool, instance any, state *types.ValidationState) error {
+func ValidateUniqueItems(arg schema.PartBool, instance any, state *schema.ValidationState) error {
 	if !arg {
 		return nil
 	}
@@ -1104,10 +1104,10 @@ func ValidateUniqueItems(arg types.PartBool, instance any, state *types.Validati
 }
 
 // ValidateMaxContains implements the maxContains keyword.
-func ValidateMaxContains(arg types.PartInt, instance any, state *types.ValidationState) error {
+func ValidateMaxContains(arg schema.PartInt, instance any, state *schema.ValidationState) error {
 	if matched, ok := state.Notes.Get("contains"); ok {
 		ln := len(matched.([]int))
-		if types.PartInt(ln) > arg {
+		if schema.PartInt(ln) > arg {
 			return &validerr.ValidationError{
 				Message: fmt.Sprintf(`array length %d is more than "maxContains" requirement %d`, ln, arg),
 			}
@@ -1117,10 +1117,10 @@ func ValidateMaxContains(arg types.PartInt, instance any, state *types.Validatio
 }
 
 // ValidateMinContains implements the minContains keyword.
-func ValidateMinContains(arg types.PartInt, instance any, state *types.ValidationState) error {
+func ValidateMinContains(arg schema.PartInt, instance any, state *schema.ValidationState) error {
 	if matched, ok := state.Notes.Get("contains"); ok {
 		ln := len(matched.([]int))
-		if types.PartInt(ln) < arg {
+		if schema.PartInt(ln) < arg {
 			return &validerr.ValidationError{
 				Message: fmt.Sprintf(`array length %d is less than "minContains" requirement %d`, ln, arg),
 			}
@@ -1130,13 +1130,13 @@ func ValidateMinContains(arg types.PartInt, instance any, state *types.Validatio
 }
 
 // ValidateMaxProperties implements the maxProperties keyword.
-func ValidateMaxProperties(arg types.PartInt, instance any, state *types.ValidationState) error {
+func ValidateMaxProperties(arg schema.PartInt, instance any, state *schema.ValidationState) error {
 	names, ok := instanceFieldNames(instance)
 	if !ok {
 		return nil
 	}
 	ln := len(names.byExactName)
-	if types.PartInt(ln) > arg {
+	if schema.PartInt(ln) > arg {
 		return &validerr.ValidationError{
 			Message: fmt.Sprintf(`number of properties %d is more than "maxProperties" required %d`, ln, arg),
 		}
@@ -1145,13 +1145,13 @@ func ValidateMaxProperties(arg types.PartInt, instance any, state *types.Validat
 }
 
 // ValidateMinProperties implements the minProperties keyword.
-func ValidateMinProperties(arg types.PartInt, instance any, state *types.ValidationState) error {
+func ValidateMinProperties(arg schema.PartInt, instance any, state *schema.ValidationState) error {
 	names, ok := instanceFieldNames(instance)
 	if !ok {
 		return nil
 	}
 	ln := len(names.byExactName)
-	if types.PartInt(ln) < arg {
+	if schema.PartInt(ln) < arg {
 		return &validerr.ValidationError{
 			Message: fmt.Sprintf(`number of properties %d is less than "minProperties" required %d`, ln, arg),
 		}
@@ -1160,7 +1160,7 @@ func ValidateMinProperties(arg types.PartInt, instance any, state *types.Validat
 }
 
 // ValidateRequired implements the required keyword.
-func ValidateRequired(arg types.PartStrings, instance any, state *types.ValidationState) error {
+func ValidateRequired(arg schema.PartStrings, instance any, state *schema.ValidationState) error {
 	names, ok := instanceFieldNames(instance)
 	if !ok {
 		return nil
@@ -1179,7 +1179,7 @@ func ValidateRequired(arg types.PartStrings, instance any, state *types.Validati
 }
 
 // ValidateDependentRequired implements the dependentRequired keyword.
-func ValidateDependentRequired(arg types.PartAny, instance any, state *types.ValidationState) error {
+func ValidateDependentRequired(arg schema.PartAny, instance any, state *schema.ValidationState) error {
 	m, ok := arg.V.(map[string]any)
 	if !ok {
 		return fmt.Errorf(`"dependentRequired" argument type %T, want map[string]any`, arg)
@@ -1217,7 +1217,7 @@ func ValidateDependentRequired(arg types.PartAny, instance any, state *types.Val
 }
 
 // formatValidator is the type of a function that validates a format.
-type formatValidator func(any, *types.ValidationState) error
+type formatValidator func(any, *schema.ValidationState) error
 
 // formatValidators maps format keywords to functions that validate them.
 var formatValidators map[string]formatValidator
@@ -1237,7 +1237,7 @@ func RegisterFormatValidator(format string, fv formatValidator) {
 }
 
 // ValidateFormat implements the format keyword.
-func ValidateFormat(arg types.PartString, instance any, state *types.ValidationState) error {
+func ValidateFormat(arg schema.PartString, instance any, state *schema.ValidationState) error {
 	if state.Opts == nil || !state.Opts.ValidateFormat {
 		return nil
 	}
@@ -1258,7 +1258,7 @@ func ValidateFormat(arg types.PartString, instance any, state *types.ValidationS
 }
 
 // ValidateDefault implements the default keyword.
-func ValidateDefault(arg types.PartAny, instance any, state *types.ValidationState) error {
+func ValidateDefault(arg schema.PartAny, instance any, state *schema.ValidationState) error {
 	// This supplies a default value, but it always validates.
 	return nil
 }
@@ -1289,7 +1289,7 @@ func instanceFloat(instance any) (float64, bool) {
 
 // ValidateDependencies validates the draft7 dependencies keyword.
 // This is also used for later drafts, as an optional feature.
-func ValidateDependencies(arg types.PartMapArrayOrSchema, instance any, state *types.ValidationState) error {
+func ValidateDependencies(arg schema.PartMapArrayOrSchema, instance any, state *schema.ValidationState) error {
 	names, ok := instanceFieldNames(instance)
 	if !ok {
 		return nil
