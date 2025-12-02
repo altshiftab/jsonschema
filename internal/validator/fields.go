@@ -35,7 +35,7 @@ func instanceField(name string, instance any) (any, string, bool) {
 	fields := cachedTypeFields(v.Type())
 	field := fields.byExactName[name]
 	if field == nil {
-		field = fields.byFoldedName[string(foldName(name))]
+		field = fields.byFoldedName[foldName(name)]
 	}
 	if field == nil {
 		return nil, "", false

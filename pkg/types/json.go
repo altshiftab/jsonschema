@@ -69,7 +69,7 @@ func (s *Schema) marshalSchema(buf *bytes.Buffer) error {
 			buf.WriteByte(']')
 		case PartStringOrStrings:
 			if v.Strings == nil {
-				fmt.Fprintf(buf, "%s", encodeString(string(v.String)))
+				fmt.Fprintf(buf, "%s", encodeString(v.String))
 			} else {
 				buf.WriteByte('[')
 				for i, s := range v.Strings {
