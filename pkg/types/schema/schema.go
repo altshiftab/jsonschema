@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/altshiftab/jsonschema/internal/validerr"
+	errors2 "github.com/altshiftab/jsonschema/pkg/errors"
 	"github.com/altshiftab/jsonschema/pkg/notes"
 	"github.com/altshiftab/jsonschema/pkg/types/arg_type"
 )
@@ -778,9 +778,9 @@ func (s *Schema) ValidateInPlaceSchema(instance any, state *ValidationState) err
 		if err := p.Keyword.Validate(p.Value, instance, subState); err != nil {
 			// Prefix with the current keyword name only if the error lacks any location.
 			if hasAnyLocation(err) {
-				validerr.AddError(&topErr, err, "")
+				errors2.AddError(&topErr, err, "")
 			} else {
-				validerr.AddError(&topErr, err, p.Keyword.Name)
+				errors2.AddError(&topErr, err, p.Keyword.Name)
 			}
 		}
 	}
@@ -809,9 +809,9 @@ func (s *Schema) ValidateSubSchema(instance any, state *ValidationState) error {
 		if err := p.Keyword.Validate(p.Value, instance, subState); err != nil {
 			// Prefix with the current keyword name only if the error lacks any location.
 			if hasAnyLocation(err) {
-				validerr.AddError(&topErr, err, "")
+				errors2.AddError(&topErr, err, "")
 			} else {
-				validerr.AddError(&topErr, err, p.Keyword.Name)
+				errors2.AddError(&topErr, err, p.Keyword.Name)
 			}
 		}
 	}
@@ -821,9 +821,9 @@ func (s *Schema) ValidateSubSchema(instance any, state *ValidationState) error {
 // hasAnyLocation reports whether err already has a populated keyword or instance location.
 func hasAnyLocation(err error) bool {
 	switch e := err.(type) {
-	case *validerr.ValidationError:
+	case *errors2.ValidationError:
 		return e.KeywordLocation != "" || e.InstanceLocation != ""
-	case *validerr.ValidationErrors:
+	case *errors2.ValidationErrors:
 		for _, ve := range e.Errs {
 			if ve.KeywordLocation != "" || ve.InstanceLocation != "" {
 				return true
@@ -837,14 +837,14 @@ func hasAnyLocation(err error) bool {
 
 // ValidationError is returned by a validation function
 // when an instance fails validation.
-type ValidationError = validerr.ValidationError
+type ValidationError = errors2.ValidationError
 
 // ValidationErrors is a collection of ValidationError values.
-type ValidationErrors = validerr.ValidationErrors
+type ValidationErrors = errors2.ValidationErrors
 
 // IsValidationError reports whether err is a validation error.
 func IsValidationError(err error) bool {
-	return validerr.IsValidationError(err)
+	return errors2.IsValidationError(err)
 }
 
 // Keyword is a schema keyword.
@@ -1146,12 +1146,12 @@ func (vs *ValidationState) InstancePointer() string {
 // EnsureInstanceLocation sets InstanceLocation on validation errors if empty.
 func EnsureInstanceLocation(err error, ptr string) error {
 	switch e := err.(type) {
-	case *validerr.ValidationError:
+	case *errors2.ValidationError:
 		if e.InstanceLocation == "" || e.InstanceLocation == "#" {
 			e.InstanceLocation = ptr
 		}
 		return e
-	case *validerr.ValidationErrors:
+	case *errors2.ValidationErrors:
 		for _, ve := range e.Errs {
 			if ve.InstanceLocation == "" || ve.InstanceLocation == "#" {
 				ve.InstanceLocation = ptr

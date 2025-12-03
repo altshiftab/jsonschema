@@ -2,11 +2,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package validerr defines the errors return by a failure to validate.
-package validerr
+package errors
 
 import (
-	"errors"
+	errors2 "errors"
 	"fmt"
 	"strings"
 )
@@ -47,7 +46,7 @@ func (ves *ValidationErrors) Error() string {
 	for i, ve := range ves.Errs {
 		errs[i] = ve
 	}
-	return errors.Join(errs...).Error()
+	return errors2.Join(errs...).Error()
 }
 
 // IsValidationError reports whether err is a validation error.
@@ -129,9 +128,9 @@ func AddError(perr *error, err error, loc string) {
 	} else if _, ok := (*perr).(*ValidationErrors); ok {
 		*perr = err
 	} else if unwrap, ok := (*perr).(interface{ Unwrap() []error }); ok && len(unwrap.Unwrap()) > 0 {
-		*perr = errors.Join(append(unwrap.Unwrap(), err)...)
+		*perr = errors2.Join(append(unwrap.Unwrap(), err)...)
 	} else {
-		*perr = errors.Join(*perr, err)
+		*perr = errors2.Join(*perr, err)
 	}
 }
 
