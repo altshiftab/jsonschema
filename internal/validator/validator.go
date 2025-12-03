@@ -8,6 +8,7 @@
 package validator
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"reflect"
@@ -609,7 +610,13 @@ func ValidateAdditionalProperties(arg schema.PartSchema, instance any, state *sc
 		}
 		if vf, _, ok := instanceField(name, instance); ok {
 			if err := arg.S.ValidateSubSchema(vf, state); err != nil {
-				validerr.AddError(&topErr, err, "additionalProperties/"+name)
+				var validationError *validerr.ValidationError
+				// NOTE: This should always be true?
+				if errors.As(err, &validationError) {
+					validationError.Message = fmt.Sprintf("unknown property %q", name)
+					validationError.KeywordLocation = "#"
+				}
+				validerr.AddError(&topErr, err, "additionalProperties")
 			}
 		}
 		note := propertiesNote{
@@ -1170,9 +1177,9 @@ func ValidateRequired(arg schema.PartStrings, instance any, state *schema.Valida
 	for _, s := range arg {
 		if _, found := names.byExactName[s]; !found {
 			err := &validerr.ValidationError{
-				Message: fmt.Sprintf("missing required field %q", s),
+				Message: fmt.Sprintf("missing required property %q", s),
 			}
-			validerr.AddError(&topErr, err, "required/"+s)
+			validerr.AddError(&topErr, err, "required")
 		}
 	}
 	return topErr
