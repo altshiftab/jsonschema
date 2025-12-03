@@ -709,7 +709,7 @@ func (s *Schema) addKeywordFromJSON(keyword string, val any, vocabulary *Vocabul
 // An instance may also be a Go struct or a pointer to a Go struct;
 // in this case json tags on fields are used when matching field names.
 func (s *Schema) Validate(instance any) error {
-	return s.ValidateWithOpts(instance, nil)
+	return s.ValidateWithOpts(instance, &ValidateOpts{ValidateFormat: true})
 }
 
 // ValidateOpts describes validation options.

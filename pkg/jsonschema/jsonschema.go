@@ -7,6 +7,7 @@ import (
 	motmedelErrors "github.com/Motmedel/utils_go/pkg/errors"
 	motmedelReflect "github.com/Motmedel/utils_go/pkg/reflect"
 	_ "github.com/altshiftab/jsonschema/pkg/draft202012"
+	_ "github.com/altshiftab/jsonschema/pkg/format"
 	schemaPkg "github.com/altshiftab/jsonschema/pkg/types/schema"
 	jsonschemaTypeGeneration "github.com/vphpersson/type_generation/pkg/producers/jsonschema"
 )
