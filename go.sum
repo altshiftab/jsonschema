@@ -1,5 +1,7 @@
 github.com/Motmedel/utils_go v0.0.299 h1:NVB0PNwlgKNKQNIgN8gPGbIWmniwjectDtqliE+9TX0=
 github.com/Motmedel/utils_go v0.0.299/go.mod h1:kKm8jM7GA8M7ICIImi5etOMixRgQfnStBPjEoCMTgbg=
+github.com/vphpersson/type_generation v0.0.17 h1:pIWohRJiVTORyZjridcdtsVozroyAzGeutzLCBvSkio=
+github.com/vphpersson/type_generation v0.0.17/go.mod h1:Lpm4QpqO/5GJ/KZTucJeKLhDfoSOVjRtf24940t+PrY=
 golang.org/x/net v0.47.0 h1:Mx+4dIFzqraBXUugkia1OOvlD6LemFo1ALMHjrXDOhY=
 golang.org/x/net v0.47.0/go.mod h1:/jNxtkgq5yWUGYkaZGqo27cfGZ1c5Nen03aYrrKpVRU=
 golang.org/x/text v0.31.0 h1:aC8ghyu4JhP8VojJ2lEHBnochRno1sgL6nEi9WGFGMM=
