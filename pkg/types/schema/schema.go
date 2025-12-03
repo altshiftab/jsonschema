@@ -423,7 +423,7 @@ func (s *Schema) buildTopFromJSON(schemaID string, uri *url.URL, v any) (*Vocabu
 		if schemaVal, ok := m["$schema"]; ok {
 			version, ok = schemaVal.(string)
 			if !ok {
-				return nil, errors.New("jsonschema: $schema does not have a string value")
+				return nil, errors.New("$schema does not have a string value")
 			}
 			s.Parts = append(s.Parts,
 				Part{
@@ -444,7 +444,7 @@ func (s *Schema) buildTopFromJSON(schemaID string, uri *url.URL, v any) (*Vocabu
 	if version == "" {
 		vocabulary = DefaultVocabulary()
 		if vocabulary == nil {
-			return nil, errors.New("jsonschema: JSON schema version not specified and there is no default")
+			return nil, errors.New("JSON schema version not specified and there is no default")
 		}
 		s.Parts = append(
 			s.Parts,
@@ -456,7 +456,7 @@ func (s *Schema) buildTopFromJSON(schemaID string, uri *url.URL, v any) (*Vocabu
 	} else {
 		vocabulary = LookupVocabulary(version)
 		if vocabulary == nil {
-			return nil, fmt.Errorf("jsonschema: JSON schema version %q not recognized", version)
+			return nil, fmt.Errorf("JSON schema version %q not recognized", version)
 		}
 	}
 
@@ -505,7 +505,7 @@ func (s *Schema) buildFromJSON(v any, vocabulary *Vocabulary) error {
 		s.Finalize(vocabulary)
 
 	default:
-		return fmt.Errorf("jsonschema: unexpected type %T while JSON decoding schema", v)
+		return fmt.Errorf("unexpected type %T while JSON decoding schema", v)
 	}
 	return nil
 }
@@ -513,7 +513,7 @@ func (s *Schema) buildFromJSON(v any, vocabulary *Vocabulary) error {
 // addKeywordFromJSON adds a [Schema] keyword and value parsed from JSON.
 func (s *Schema) addKeywordFromJSON(keyword string, val any, vocabulary *Vocabulary) error {
 	if len(keyword) == 0 {
-		return errors.New("jsonschema: empty JSON keyword")
+		return errors.New("empty JSON keyword")
 	}
 
 	sk, ok := vocabulary.Keywords[keyword]
@@ -536,25 +536,25 @@ func (s *Schema) addKeywordFromJSON(keyword string, val any, vocabulary *Vocabul
 	case arg_type.ArgTypeBool:
 		b, ok := val.(bool)
 		if !ok {
-			return fmt.Errorf("jsonschema: %q argument is type %T, want bool", keyword, val)
+			return fmt.Errorf("%q argument is type %T, want bool", keyword, val)
 		}
 		spv = PartBool(b)
 	case arg_type.ArgTypeString:
 		s, ok := val.(string)
 		if !ok {
-			return fmt.Errorf("jsonschema: %q argument is type %T, want string", keyword, val)
+			return fmt.Errorf("%q argument is type %T, want string", keyword, val)
 		}
 		spv = PartString(s)
 	case arg_type.ArgTypeStrings:
 		vals, ok := val.([]any)
 		if !ok {
-			return fmt.Errorf("jsonschema: %q argument is type %T, want array of string", keyword, val)
+			return fmt.Errorf("%q argument is type %T, want array of string", keyword, val)
 		}
 		strs := make([]string, 0, len(vals))
 		for i, v := range vals {
 			s, ok := v.(string)
 			if !ok {
-				return fmt.Errorf("jsonschema: %q argument item %d is %T, want string", keyword, i, v)
+				return fmt.Errorf("%q argument item %d is %T, want string", keyword, i, v)
 			}
 			strs = append(strs, s)
 		}
@@ -572,7 +572,7 @@ func (s *Schema) addKeywordFromJSON(keyword string, val any, vocabulary *Vocabul
 			for i, v := range vals {
 				s, ok := v.(string)
 				if !ok {
-					return fmt.Errorf("jsonschema: %q argument item %d is %T, want string", keyword, i, v)
+					return fmt.Errorf("%q argument item %d is %T, want string", keyword, i, v)
 				}
 				strs = append(strs, s)
 			}
@@ -581,16 +581,16 @@ func (s *Schema) addKeywordFromJSON(keyword string, val any, vocabulary *Vocabul
 	case arg_type.ArgTypeInt:
 		f, ok := val.(float64)
 		if !ok {
-			return fmt.Errorf("jsonschema: %q argument is type %T, want integer", keyword, val)
+			return fmt.Errorf("%q argument is type %T, want integer", keyword, val)
 		}
 		if f != math.Trunc(f) {
-			return fmt.Errorf("jsonschema: %q argument is non-integer, want integer", keyword)
+			return fmt.Errorf("%q argument is non-integer, want integer", keyword)
 		}
 		spv = PartInt(f)
 	case arg_type.ArgTypeFloat:
 		f, ok := val.(float64)
 		if !ok {
-			return fmt.Errorf("jsonschema: %q argument is type %T, want number", keyword, val)
+			return fmt.Errorf("%q argument is type %T, want number", keyword, val)
 		}
 		spv = PartFloat(f)
 	case arg_type.ArgTypeSchema:
@@ -602,7 +602,7 @@ func (s *Schema) addKeywordFromJSON(keyword string, val any, vocabulary *Vocabul
 	case arg_type.ArgTypeSchemas:
 		as, ok := val.([]any)
 		if !ok {
-			return fmt.Errorf("jsonschema: %q argument is type %T, want array", keyword, val)
+			return fmt.Errorf("%q argument is type %T, want array", keyword, val)
 		}
 		schemas := make([]*Schema, 0, len(as))
 		for _, a := range as {
@@ -616,7 +616,7 @@ func (s *Schema) addKeywordFromJSON(keyword string, val any, vocabulary *Vocabul
 	case arg_type.ArgTypeMapSchema:
 		jm, ok := val.(map[string]any)
 		if !ok {
-			return fmt.Errorf("jsonschema: %q argument is type %T, want object", keyword, val)
+			return fmt.Errorf("%q argument is type %T, want object", keyword, val)
 		}
 		nm := make(map[string]*Schema, len(jm))
 		for k, v := range jm {
@@ -656,7 +656,7 @@ func (s *Schema) addKeywordFromJSON(keyword string, val any, vocabulary *Vocabul
 	case arg_type.ArgTypeMapArrayOrSchema:
 		jm, ok := val.(map[string]any)
 		if !ok {
-			return fmt.Errorf("jsonschema: %q argument is type %T, want object", keyword, val)
+			return fmt.Errorf("%q argument is type %T, want object", keyword, val)
 		}
 		nm := make(map[string]ArrayOrSchema, len(jm))
 		for k, v := range jm {
@@ -679,7 +679,7 @@ func (s *Schema) addKeywordFromJSON(keyword string, val any, vocabulary *Vocabul
 				}
 				as.Array = strs
 			default:
-				return fmt.Errorf("jsonschema: %q argument item %s is %T, want schema or array of strings", keyword, k, v)
+				return fmt.Errorf("%q argument item %s is %T, want schema or array of strings", keyword, k, v)
 			}
 			nm[k] = as
 		}
@@ -1229,12 +1229,12 @@ func (r *registry) add(s string, v *Vocabulary, def bool) {
 		r.mapping = make(map[string]*Vocabulary)
 	}
 	if _, found := r.mapping[s]; found {
-		panic(fmt.Sprintf("jsonschema: multiple attempts to add %q to registry", s))
+		panic(fmt.Sprintf("multiple attempts to add %q to registry", s))
 	}
 	r.mapping[s] = v
 	if def {
 		if r.defval != nil {
-			panic("jsonschema: multiple default vocabularies")
+			panic("multiple default vocabularies")
 		}
 		r.defval = v
 	}
