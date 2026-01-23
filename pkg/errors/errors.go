@@ -5,9 +5,13 @@
 package errors
 
 import (
-	errors2 "errors"
+	"errors"
 	"fmt"
 	"strings"
+)
+
+var (
+	ErrNilSchema = errors.New("nil schema")
 )
 
 // ValidationError is returned by a validation function
@@ -46,7 +50,7 @@ func (ves *ValidationErrors) Error() string {
 	for i, ve := range ves.Errs {
 		errs[i] = ve
 	}
-	return errors2.Join(errs...).Error()
+	return errors.Join(errs...).Error()
 }
 
 // IsValidationError reports whether err is a validation error.
@@ -128,9 +132,9 @@ func AddError(perr *error, err error, loc string) {
 	} else if _, ok := (*perr).(*ValidationErrors); ok {
 		*perr = err
 	} else if unwrap, ok := (*perr).(interface{ Unwrap() []error }); ok && len(unwrap.Unwrap()) > 0 {
-		*perr = errors2.Join(append(unwrap.Unwrap(), err)...)
+		*perr = errors.Join(append(unwrap.Unwrap(), err)...)
 	} else {
-		*perr = errors2.Join(*perr, err)
+		*perr = errors.Join(*perr, err)
 	}
 }
 
