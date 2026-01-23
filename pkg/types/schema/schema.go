@@ -697,19 +697,38 @@ func (s *Schema) addKeywordFromJSON(keyword string, val any, vocabulary *Vocabul
 	return nil
 }
 
-// Validate reports whether instance satisfies schema.
-// If it does, this will return nil.
-// If it does not, this will return an error with type either
-// [*ValidationError] or [*ValidationErrors].
-// A non-nil error with a different type indicates some error
-// during validation processing.
-//
 // An instance may be an object read from JSON,
 // with a Go type like map[string]any or []any.
 // An instance may also be a Go struct or a pointer to a Go struct;
 // in this case json tags on fields are used when matching field names.
+
 func (s *Schema) Validate(instance any) error {
-	return s.ValidateWithOpts(instance, &ValidateOpts{ValidateFormat: true})
+	// Validate reports whether instance satisfies schema.
+	// If it does, this will return nil.
+	// If it does not, this will return an error with type either
+	// [*ValidationError] or [*ValidationErrors].
+	// A non-nil error with a different type indicates some error
+	// during validation processing.
+	err := s.ValidateWithOpts(instance, &ValidateOpts{ValidateFormat: true})
+
+	var collected []*ValidationError
+
+	var validationErrors *ValidationErrors
+	if errors.As(err, &validationErrors) {
+		collected = append(collected, validationErrors.Errs...)
+	} else {
+		var validationError *ValidationError
+		if errors.As(err, &validationError) {
+			collected = append(collected, validationError)
+		}
+	}
+
+	if len(collected) == 0 {
+		return fmt.Errorf("schema validate: %w", err)
+	}
+
+	return errors2.NewValidateError(err, collected)
+
 }
 
 // ValidateOpts describes validation options.

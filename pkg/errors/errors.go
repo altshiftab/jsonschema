@@ -53,6 +53,15 @@ func (ves *ValidationErrors) Error() string {
 	return errors.Join(errs...).Error()
 }
 
+type ValidateError struct {
+	error
+	Errors []*ValidationError
+}
+
+func NewValidateError(err error, errs []*ValidationError) error {
+	return &ValidateError{error: err, Errors: errs}
+}
+
 // IsValidationError reports whether err is a validation error.
 func IsValidationError(err error) bool {
 	// There is another version of this function in

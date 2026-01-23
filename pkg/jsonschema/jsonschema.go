@@ -23,7 +23,7 @@ func New(data []byte) (*Schema, error) {
 	return &s, nil
 }
 
-func FromType[T any]() (*Schema, error) {
+func NewFromType[T any]() (*Schema, error) {
 	schemaData, err := jsonschemaTypeGeneration.Convert(motmedelReflect.TypeOf[T]())
 	if err != nil {
 		return nil, motmedelErrors.New(fmt.Errorf("type generation jsonschema convert: %w", err))
