@@ -710,6 +710,9 @@ func (s *Schema) Validate(instance any) error {
 	// A non-nil error with a different type indicates some error
 	// during validation processing.
 	err := s.ValidateWithOpts(instance, &ValidateOpts{ValidateFormat: true})
+	if err == nil {
+		return nil
+	}
 
 	var collected []*ValidationError
 
