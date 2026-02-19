@@ -1255,6 +1255,30 @@ func ValidateFormat(arg schema.PartString, instance any, state *schema.Validatio
 	if fv == nil {
 		return nil
 	}
+
+	// If the instance is a slice or array, validate each element individually.
+	if a, ok := instance.([]any); ok {
+		for _, elem := range a {
+			if err := callFormatValidator(fv, elem, state); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	v := reflect.ValueOf(instance)
+	if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
+		for i := range v.Len() {
+			if err := callFormatValidator(fv, v.Index(i).Interface(), state); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	return callFormatValidator(fv, instance, state)
+}
+
+func callFormatValidator(fv formatValidator, instance any, state *schema.ValidationState) error {
 	err := fv(instance, state)
 	if err != nil && !errors2.IsValidationError(err) {
 		err = &errors2.ValidationError{

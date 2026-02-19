@@ -34,8 +34,6 @@ func buildArrayOfEmailSchema() *schema.Schema {
 // buildFlatArrayFormatSchema returns a schema with format on the array itself:
 //
 //	{"type":"array","format":"email"}
-//
-// This is a common mistake — placing format at the array level.
 func buildFlatArrayFormatSchema() *schema.Schema {
 	b := draft202012.NewBuilder()
 	b = b.AddType("array")
@@ -58,7 +56,7 @@ func TestEmailFormatSingleString(t *testing.T) {
 }
 
 func TestEmailFormatSlice_ItemsSchema(t *testing.T) {
-	// Using the correct schema: {"type":"array","items":{"type":"string","format":"email"}}
+	// Using items-level format: {"type":"array","items":{"type":"string","format":"email"}}
 	s := buildArrayOfEmailSchema()
 
 	// A slice with all valid emails should pass.
@@ -76,20 +74,31 @@ func TestEmailFormatSlice_ItemsSchema(t *testing.T) {
 
 func TestEmailFormatSlice_FlatFormat(t *testing.T) {
 	// Schema: {"type":"array","format":"email"}
-	// The format keyword is on the array itself, NOT on items.
-	// This does NOT validate individual elements.
+	// Format is on the array itself. ValidateFormat now iterates over
+	// slice elements, so this catches invalid emails too.
 	s := buildFlatArrayFormatSchema()
 
-	// Even a slice with invalid emails passes, because the email format
-	// validator receives the array (not a string) and silently returns nil.
+	// All valid emails should pass.
+	valid := []any{"alice@example.com", "bob@example.com"}
+	if err := s.Validate(valid); err != nil {
+		t.Errorf("expected all-valid email slice to pass, got error: %v", err)
+	}
+
+	// A slice with invalid emails should now fail.
 	invalid := []any{"not-an-email", "also-not-email"}
-	if err := s.Validate(invalid); err != nil {
-		t.Errorf("flat format on array silently passes (format only checks strings): got error: %v", err)
+	if err := s.Validate(invalid); err == nil {
+		t.Error("expected slice with invalid email to fail validation, but got nil")
+	}
+
+	// Mixed: one valid, one invalid should fail.
+	mixed := []any{"alice@example.com", "not-an-email"}
+	if err := s.Validate(mixed); err == nil {
+		t.Error("expected slice with mixed valid/invalid emails to fail validation, but got nil")
 	}
 }
 
 func TestEmailFormatSlice_GoStringSlice(t *testing.T) {
-	// Using the correct items schema, but with a Go []string instead of []any.
+	// Using the items schema with a Go []string (not []any).
 	s := buildArrayOfEmailSchema()
 
 	valid := []string{"alice@example.com", "bob@example.com"}
@@ -103,8 +112,23 @@ func TestEmailFormatSlice_GoStringSlice(t *testing.T) {
 	}
 }
 
+func TestEmailFormatSlice_GoStringSlice_FlatFormat(t *testing.T) {
+	// Format directly on the array, with a Go []string.
+	s := buildFlatArrayFormatSchema()
+
+	valid := []string{"alice@example.com", "bob@example.com"}
+	if err := s.Validate(valid); err != nil {
+		t.Errorf("expected Go []string with valid emails to pass, got error: %v", err)
+	}
+
+	invalid := []string{"alice@example.com", "not-an-email"}
+	if err := s.Validate(invalid); err == nil {
+		t.Error("expected Go []string with invalid email to fail validation, but got nil")
+	}
+}
+
 func TestEmailFormatSlice_JSONUnmarshal(t *testing.T) {
-	// Build the items-level email schema and validate JSON-unmarshaled data.
+	// Validate JSON-unmarshaled arrays with items-level format.
 	s := buildArrayOfEmailSchema()
 
 	validJSON := `["alice@example.com", "bob@example.com"]`
@@ -123,5 +147,17 @@ func TestEmailFormatSlice_JSONUnmarshal(t *testing.T) {
 	}
 	if err := s.Validate(invalidInstance); err == nil {
 		t.Error("expected JSON array with invalid email to fail validation, but got nil")
+	}
+}
+
+func TestEmailFormatSlice_EmptySlice(t *testing.T) {
+	s := buildFlatArrayFormatSchema()
+
+	// An empty slice should pass.
+	if err := s.Validate([]any{}); err != nil {
+		t.Errorf("expected empty slice to pass, got error: %v", err)
+	}
+	if err := s.Validate([]string{}); err != nil {
+		t.Errorf("expected empty Go string slice to pass, got error: %v", err)
 	}
 }
