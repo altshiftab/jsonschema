@@ -1056,7 +1056,7 @@ func ValidateMinItems(arg schema.PartInt, instance any, state *schema.Validation
 
 	if schema.PartInt(ln) < arg {
 		return &errors2.ValidationError{
-			Message: fmt.Sprintf(`length %d too short for "maxItems" argument %d`, ln, arg),
+			Message: fmt.Sprintf(`length %d too short for "minItems" argument %d`, ln, arg),
 		}
 	}
 
