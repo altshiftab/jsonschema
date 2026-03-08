@@ -3,8 +3,8 @@ module github.com/altshiftab/jsonschema
 go 1.25
 
 require (
-	github.com/Motmedel/utils_go v0.0.414
-	github.com/vphpersson/type_generation v0.0.24
+	github.com/Motmedel/utils_go v0.0.416
+	github.com/vphpersson/type_generation v0.0.25
 	golang.org/x/net v0.49.0
 )
 
