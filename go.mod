@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/Motmedel/utils_go v0.0.477
-	github.com/vphpersson/type_generation v0.0.28
+	github.com/vphpersson/type_generation v0.0.30
 	golang.org/x/net v0.49.0
 )
 
