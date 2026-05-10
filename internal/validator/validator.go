@@ -95,10 +95,15 @@ func ValidateAnyOf(arg schema.PartSchemas, instance any, state *schema.Validatio
 	var keepNotes []notes.Notes
 	ok := false
 	var topErr error
-	for _, s := range arg {
+	var branchErrs []error
+	for i, s := range arg {
 		if err := s.ValidateInPlaceSchema(instance, subState); err != nil {
 			if !errors2.IsValidationError(err) {
 				errors2.AddError(&topErr, err, "")
+			} else {
+				var be error
+				errors2.AddError(&be, err, fmt.Sprintf("anyOf/%d", i))
+				branchErrs = append(branchErrs, be)
 			}
 		} else {
 			ok = true
@@ -113,6 +118,9 @@ func ValidateAnyOf(arg schema.PartSchemas, instance any, state *schema.Validatio
 	}
 	if !ok {
 		errors2.AddValidationErrorStruct(&topErr, &errors2.ValidationError{Message: `no "anyof" schema matches`})
+		for _, be := range branchErrs {
+			errors2.AddError(&topErr, be, "")
+		}
 	} else {
 		state.Notes.AddNotes(keepNotes...)
 	}
