@@ -230,7 +230,7 @@ func TestValidateError(t *testing.T) {
 		t.Error("errors.Is(err, motmedelErrors.ErrParseError) = true, want false")
 	}
 
-	if unwrapped := errors.Unwrap(err); unwrapped != inner {
+	if unwrapped := errors.Unwrap(err); !errors.Is(unwrapped, inner) {
 		t.Errorf("errors.Unwrap = %v, want %v", unwrapped, inner)
 	}
 

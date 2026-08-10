@@ -53,7 +53,7 @@ func (s *Schema) String() string {
 		if part.Keyword.Generated {
 			// Don't try to print schemas of generated keywords.
 			// They can cause infinite recursion.
-			switch part.Keyword.ArgType {
+			switch part.Keyword.ArgType { //nolint:exhaustive // The default case handles the remaining, schema-bearing part types.
 			case ArgTypeBool, ArgTypeString, ArgTypeStrings, ArgTypeInt, ArgTypeFloat:
 			default:
 				val = PartString("<not printed>")
@@ -99,13 +99,13 @@ func (s *Schema) Resolve(opts *ResolveOpts) error {
 			if part.Keyword == &SchemaKeyword {
 				v = LookupVocabulary(string(part.Value.(PartString)))
 				if v == nil {
-					return fmt.Errorf("no registered vocabulary for schema %q when resolving", part.Value.(PartString))
+					return fmt.Errorf("%w: no registered vocabulary for schema %q when resolving", ErrInvalidSchema, part.Value.(PartString))
 				}
 				break
 			}
 		}
 		if v == nil {
-			return errors.New("unknown schema vocabulary when resolving")
+			return fmt.Errorf("%w: unknown schema vocabulary when resolving", ErrInvalidSchema)
 		}
 	}
 
@@ -129,7 +129,7 @@ func (s *Schema) Children() iter.Seq2[string, *Schema] {
 				continue
 			}
 
-			switch part.Keyword.ArgType {
+			switch part.Keyword.ArgType { //nolint:exhaustive // Only schema-bearing part types have children; the rest fall through.
 			case ArgTypeSchema:
 				if !yield(part.Keyword.Name, part.Value.(PartSchema).S) {
 					return
@@ -280,7 +280,7 @@ func (s *Schema) marshalSchema(buf *bytes.Buffer) error {
 			fmt.Fprintf(buf, "%d", v)
 		case PartFloat:
 			if math.IsNaN(float64(v)) || math.IsInf(float64(v), 0) {
-				return fmt.Errorf("cannot marshal non-finite %q value %v", part.Keyword.Name, float64(v))
+				return fmt.Errorf("%w: cannot marshal non-finite %q value %v", ErrInvalidSchema, part.Keyword.Name, float64(v))
 			}
 			if PartFloat(int64(v)) == v {
 				fmt.Fprintf(buf, "%d", int64(v))
@@ -370,7 +370,7 @@ func (s *Schema) marshalSchema(buf *bytes.Buffer) error {
 			}
 			buf.Write(data)
 		default:
-			return fmt.Errorf("schema.MarshalJSON: unexpected type %T", part.Value)
+			return fmt.Errorf("%w: schema.MarshalJSON: unexpected type %T", ErrInvalidSchema, part.Value)
 		}
 	}
 
@@ -381,8 +381,9 @@ func (s *Schema) marshalSchema(buf *bytes.Buffer) error {
 
 // isBoolSchema reports whether schema is a boolean schema,
 // and reports whether it is the "true" schema.
-func (s *Schema) isBoolSchema() (isBoolSchema, isTrueSchema bool) {
-	isBoolSchema = false
+func (s *Schema) isBoolSchema() (bool, bool) {
+	isBoolSchema := false
+	isTrueSchema := false
 	for _, part := range s.Parts {
 		if part.Keyword == &SchemaKeyword || part.Keyword.Generated {
 			continue
@@ -428,7 +429,7 @@ func (s *Schema) buildTopFromJSON(schemaID string, uri *url.URL, v any) (*Vocabu
 		if schemaVal, ok := m["$schema"]; ok {
 			version, ok = schemaVal.(string)
 			if !ok {
-				return nil, errors.New("$schema does not have a string value")
+				return nil, fmt.Errorf("%w: $schema does not have a string value", ErrInvalidSchema)
 			}
 			sawSchemaKeyword = true
 			s.Parts = append(s.Parts,
@@ -453,12 +454,12 @@ func (s *Schema) buildTopFromJSON(schemaID string, uri *url.URL, v any) (*Vocabu
 	if version == "" {
 		vocabulary = DefaultVocabulary()
 		if vocabulary == nil {
-			return nil, errors.New("JSON schema version not specified and there is no default")
+			return nil, fmt.Errorf("%w: JSON schema version not specified and there is no default", ErrInvalidSchema)
 		}
 	} else {
 		vocabulary = LookupVocabulary(version)
 		if vocabulary == nil {
-			return nil, fmt.Errorf("JSON schema version %q not recognized", version)
+			return nil, fmt.Errorf("%w: JSON schema version %q not recognized", ErrInvalidSchema, version)
 		}
 	}
 
@@ -519,7 +520,7 @@ func (s *Schema) buildFromJSON(v any, vocabulary *Vocabulary) error {
 		s.Finalize(vocabulary)
 
 	default:
-		return fmt.Errorf("unexpected type %T while JSON decoding schema", v)
+		return fmt.Errorf("%w: unexpected type %T while JSON decoding schema", ErrInvalidSchema, v)
 	}
 	return nil
 }
@@ -527,7 +528,7 @@ func (s *Schema) buildFromJSON(v any, vocabulary *Vocabulary) error {
 // addKeywordFromJSON adds a [Schema] keyword and value parsed from JSON.
 func (s *Schema) addKeywordFromJSON(keyword string, val any, vocabulary *Vocabulary) error {
 	if len(keyword) == 0 {
-		return errors.New("empty JSON keyword")
+		return fmt.Errorf("%w: empty JSON keyword", ErrInvalidSchema)
 	}
 
 	sk, ok := vocabulary.Keywords[keyword]
@@ -550,25 +551,25 @@ func (s *Schema) addKeywordFromJSON(keyword string, val any, vocabulary *Vocabul
 	case ArgTypeBool:
 		b, ok := val.(bool)
 		if !ok {
-			return fmt.Errorf("%q argument is type %T, want bool", keyword, val)
+			return fmt.Errorf("%w: %q argument is type %T, want bool", ErrInvalidSchema, keyword, val)
 		}
 		spv = PartBool(b)
 	case ArgTypeString:
 		s, ok := val.(string)
 		if !ok {
-			return fmt.Errorf("%q argument is type %T, want string", keyword, val)
+			return fmt.Errorf("%w: %q argument is type %T, want string", ErrInvalidSchema, keyword, val)
 		}
 		spv = PartString(s)
 	case ArgTypeStrings:
 		vals, ok := val.([]any)
 		if !ok {
-			return fmt.Errorf("%q argument is type %T, want array of string", keyword, val)
+			return fmt.Errorf("%w: %q argument is type %T, want array of string", ErrInvalidSchema, keyword, val)
 		}
 		strs := make([]string, 0, len(vals))
 		for i, v := range vals {
 			s, ok := v.(string)
 			if !ok {
-				return fmt.Errorf("%q argument item %d is %T, want string", keyword, i, v)
+				return fmt.Errorf("%w: %q argument item %d is %T, want string", ErrInvalidSchema, keyword, i, v)
 			}
 			strs = append(strs, s)
 		}
@@ -580,13 +581,13 @@ func (s *Schema) addKeywordFromJSON(keyword string, val any, vocabulary *Vocabul
 		} else {
 			vals, ok := val.([]any)
 			if !ok {
-				return fmt.Errorf("%q argument is type %T, want string or array of string", keyword, val)
+				return fmt.Errorf("%w: %q argument is type %T, want string or array of string", ErrInvalidSchema, keyword, val)
 			}
 			strs := make([]string, 0, len(vals))
 			for i, v := range vals {
 				s, ok := v.(string)
 				if !ok {
-					return fmt.Errorf("%q argument item %d is %T, want string", keyword, i, v)
+					return fmt.Errorf("%w: %q argument item %d is %T, want string", ErrInvalidSchema, keyword, i, v)
 				}
 				strs = append(strs, s)
 			}
@@ -595,16 +596,16 @@ func (s *Schema) addKeywordFromJSON(keyword string, val any, vocabulary *Vocabul
 	case ArgTypeInt:
 		f, ok := val.(float64)
 		if !ok {
-			return fmt.Errorf("%q argument is type %T, want integer", keyword, val)
+			return fmt.Errorf("%w: %q argument is type %T, want integer", ErrInvalidSchema, keyword, val)
 		}
 		if f != math.Trunc(f) {
-			return fmt.Errorf("%q argument is non-integer, want integer", keyword)
+			return fmt.Errorf("%w: %q argument is non-integer, want integer", ErrInvalidSchema, keyword)
 		}
 		spv = PartInt(f)
 	case ArgTypeFloat:
 		f, ok := val.(float64)
 		if !ok {
-			return fmt.Errorf("%q argument is type %T, want number", keyword, val)
+			return fmt.Errorf("%w: %q argument is type %T, want number", ErrInvalidSchema, keyword, val)
 		}
 		spv = PartFloat(f)
 	case ArgTypeSchema:
@@ -616,7 +617,7 @@ func (s *Schema) addKeywordFromJSON(keyword string, val any, vocabulary *Vocabul
 	case ArgTypeSchemas:
 		as, ok := val.([]any)
 		if !ok {
-			return fmt.Errorf("%q argument is type %T, want array", keyword, val)
+			return fmt.Errorf("%w: %q argument is type %T, want array", ErrInvalidSchema, keyword, val)
 		}
 		schemas := make([]*Schema, 0, len(as))
 		for _, a := range as {
@@ -630,7 +631,7 @@ func (s *Schema) addKeywordFromJSON(keyword string, val any, vocabulary *Vocabul
 	case ArgTypeMapSchema:
 		jm, ok := val.(map[string]any)
 		if !ok {
-			return fmt.Errorf("%q argument is type %T, want object", keyword, val)
+			return fmt.Errorf("%w: %q argument is type %T, want object", ErrInvalidSchema, keyword, val)
 		}
 		nm := make(map[string]*Schema, len(jm))
 		for k, v := range jm {
@@ -670,7 +671,7 @@ func (s *Schema) addKeywordFromJSON(keyword string, val any, vocabulary *Vocabul
 	case ArgTypeMapArrayOrSchema:
 		jm, ok := val.(map[string]any)
 		if !ok {
-			return fmt.Errorf("%q argument is type %T, want object", keyword, val)
+			return fmt.Errorf("%w: %q argument is type %T, want object", ErrInvalidSchema, keyword, val)
 		}
 		nm := make(map[string]ArrayOrSchema, len(jm))
 		for k, v := range jm {
@@ -687,13 +688,13 @@ func (s *Schema) addKeywordFromJSON(keyword string, val any, vocabulary *Vocabul
 				for i, v := range v {
 					s, ok := v.(string)
 					if !ok {
-						return fmt.Errorf("%q argument item %s:%d is %T, want string", keyword, k, i, v)
+						return fmt.Errorf("%w: %q argument item %s:%d is %T, want string", ErrInvalidSchema, keyword, k, i, v)
 					}
 					strs = append(strs, s)
 				}
 				as.Array = strs
 			default:
-				return fmt.Errorf("%q argument item %s is %T, want schema or array of strings", keyword, k, v)
+				return fmt.Errorf("%w: %q argument item %s is %T, want schema or array of strings", ErrInvalidSchema, keyword, k, v)
 			}
 			nm[k] = as
 		}
@@ -846,7 +847,7 @@ func (s *Schema) ValidateSubSchema(instance any, state *ValidationState) error {
 
 // hasAnyLocation reports whether err already has a populated keyword or instance location.
 func hasAnyLocation(err error) bool {
-	switch e := err.(type) {
+	switch e := err.(type) { //nolint:errorlint // Validation errors are aggregated, not wrapped; direct type matching is deliberate.
 	case *ValidationError:
 		return e.KeywordLocation != "" || e.InstanceLocation != ""
 	case *ValidationErrors:
@@ -1100,7 +1101,7 @@ type ValidationState struct {
 // the notes stored in vs.
 func (vs *ValidationState) Child() (*ValidationState, error) {
 	if vs.Depth > 1000 {
-		return nil, errors.New("recursion while validating schema too deep")
+		return nil, fmt.Errorf("%w: recursion while validating schema too deep", ErrInvalidSchema)
 	}
 
 	ret := &ValidationState{
@@ -1143,7 +1144,7 @@ func (vs *ValidationState) InstancePointer() string {
 			b = append(b, '/')
 		}
 		// Replace ~ with ~0, / with ~1
-		for j := 0; j < len(t); j++ {
+		for j := range len(t) {
 			switch t[j] {
 			case '~':
 				b = append(b, '~', '0')
@@ -1159,7 +1160,7 @@ func (vs *ValidationState) InstancePointer() string {
 
 // EnsureInstanceLocation sets InstanceLocation on validation errors if empty.
 func EnsureInstanceLocation(err error, ptr string) error {
-	switch e := err.(type) {
+	switch e := err.(type) { //nolint:errorlint // Validation errors are aggregated, not wrapped; direct type matching is deliberate.
 	case *ValidationError:
 		if e.InstanceLocation == "" || e.InstanceLocation == "#" {
 			e.InstanceLocation = ptr
@@ -1290,7 +1291,7 @@ func (r *registry) setDef(s string) error {
 		}
 	}
 
-	return fmt.Errorf("setting default to %q failed: unknown schema name", s)
+	return fmt.Errorf("%w: setting default to %q failed: unknown schema name", ErrInvalidSchema, s)
 }
 
 // clear clears the registry, removing all entries.

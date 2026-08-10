@@ -35,7 +35,7 @@ func dateTimeFormat(instance any, state *schema.ValidationState) error {
 		return nil
 	}
 	if !isValidDateTime(s) {
-		return fmt.Errorf("%q is not a valid date-time", s)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q is not a valid date-time", s)}
 	}
 	return nil
 }
@@ -64,7 +64,7 @@ func dateFormat(instance any, state *schema.ValidationState) error {
 		return nil
 	}
 	if !isValidDate(s) {
-		return fmt.Errorf("%q is not a valid date", s)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q is not a valid date", s)}
 	}
 	return nil
 }
@@ -118,13 +118,13 @@ func timeFormat(instance any, state *schema.ValidationState) error {
 		return nil
 	}
 	if !isValidTime(s) {
-		return fmt.Errorf("%q is not a valid time", s)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q is not a valid time", s)}
 	}
 	return nil
 }
 
 // isValidTime reports whether s is a valid RFC3339 full-time.
-// The format is HH:MM:SS[frac]offset
+// The format is HH:MM:SS[frac]offset.
 func isValidTime(s string) bool {
 	// time-hour      = 2DIGIT  ; 00-23
 	// time-minute    = 2DIGIT  ; 00-59
@@ -230,7 +230,7 @@ func durationFormat(instance any, state *schema.ValidationState) error {
 		return nil
 	}
 	if !isValidDuration(s) {
-		return fmt.Errorf("%q is not a valid duration", s)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q is not a valid duration", s)}
 	}
 	return nil
 }

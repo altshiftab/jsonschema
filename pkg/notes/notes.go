@@ -49,8 +49,8 @@ func (n *Notes) Set(name string, val any) {
 }
 
 // Get retrieves a note, including reporting whether it exists.
-func (n *Notes) Get(name string) (val any, ok bool) {
-	val, ok = n.m[name]
+func (n *Notes) Get(name string) (any, bool) {
+	val, ok := n.m[name]
 	return val, ok
 }
 

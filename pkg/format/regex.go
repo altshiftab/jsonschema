@@ -18,7 +18,7 @@ func regexFormat(instance any, state *schema.ValidationState) error {
 		return nil
 	}
 	if _, err := syntax.Parse(s, syntax.Perl); err != nil {
-		return fmt.Errorf("%q is not a valid regexp (note that only Go style regexps are supported)", s)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q is not a valid regexp (note that only Go style regexps are supported)", s)}
 	}
 	return nil
 }

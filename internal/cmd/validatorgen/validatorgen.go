@@ -94,6 +94,7 @@ func printValidatorConvertors() {
 		}
 
 		var desc string
+		//nolint:exhaustive // Int and Float are skipped by the continue above.
 		switch t {
 		case schema.ArgTypeBool:
 			desc = "bool"
@@ -129,6 +130,7 @@ func printValidatorConvertors() {
 		os.Exit(1)
 	}
 
+	//nolint:gosec // Generated source files are world-readable by design.
 	if err := os.WriteFile("validators.go", formatted, 0o644); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

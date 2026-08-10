@@ -26,7 +26,7 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 
 	// The input must consist of a single JSON value.
 	if _, err := dec.ReadToken(); !errors.Is(err, io.EOF) {
-		return errors.New("unexpected data after JSON schema")
+		return fmt.Errorf("%w: unexpected data after JSON schema", ErrInvalidSchema)
 	}
 	return nil
 }
@@ -55,11 +55,11 @@ func (s *Schema) UnmarshalJSONFrom(dec *jsontext.Decoder) error {
 // The root determines the vocabulary: the value of a "$schema" member,
 // which may appear anywhere in the object, or the default vocabulary.
 func (s *Schema) decodeTop(dec *jsontext.Decoder) (*Vocabulary, error) {
-	switch dec.PeekKind() {
+	switch dec.PeekKind() { //nolint:exhaustive // The default case rejects the remaining kinds.
 	case 't', 'f':
 		vocabulary := DefaultVocabulary()
 		if vocabulary == nil {
-			return nil, errors.New("JSON schema version not specified and there is no default")
+			return nil, fmt.Errorf("%w: JSON schema version not specified and there is no default", ErrInvalidSchema)
 		}
 		tok, err := dec.ReadToken()
 		if err != nil {
@@ -75,7 +75,7 @@ func (s *Schema) decodeTop(dec *jsontext.Decoder) (*Vocabulary, error) {
 		// Handled below.
 
 	default:
-		return nil, fmt.Errorf("unexpected JSON %s while decoding schema", kindName(dec.PeekKind()))
+		return nil, fmt.Errorf("%w: unexpected JSON %s while decoding schema", ErrInvalidSchema, kindName(dec.PeekKind()))
 	}
 
 	// The vocabulary needed to interpret the keywords is not known
@@ -101,7 +101,7 @@ func (s *Schema) decodeTop(dec *jsontext.Decoder) (*Vocabulary, error) {
 		// The decoder may be configured to permit duplicate names,
 		// but a schema with duplicate keywords is an authoring error.
 		if seen[name] {
-			return nil, fmt.Errorf("duplicate schema keyword %q", name)
+			return nil, fmt.Errorf("%w: duplicate schema keyword %q", ErrInvalidSchema, name)
 		}
 		seen[name] = true
 
@@ -112,7 +112,7 @@ func (s *Schema) decodeTop(dec *jsontext.Decoder) (*Vocabulary, error) {
 
 		if name == SchemaKeyword.Name {
 			if err := jsonv2.Unmarshal(raw, &version); err != nil {
-				return nil, errors.New("$schema does not have a string value")
+				return nil, fmt.Errorf("%w: $schema does not have a string value", ErrInvalidSchema)
 			}
 		}
 
@@ -129,12 +129,12 @@ func (s *Schema) decodeTop(dec *jsontext.Decoder) (*Vocabulary, error) {
 	if version == "" {
 		vocabulary = DefaultVocabulary()
 		if vocabulary == nil {
-			return nil, errors.New("JSON schema version not specified and there is no default")
+			return nil, fmt.Errorf("%w: JSON schema version not specified and there is no default", ErrInvalidSchema)
 		}
 	} else {
 		vocabulary = LookupVocabulary(version)
 		if vocabulary == nil {
-			return nil, fmt.Errorf("JSON schema version %q not recognized", version)
+			return nil, fmt.Errorf("%w: JSON schema version %q not recognized", ErrInvalidSchema, version)
 		}
 	}
 
@@ -169,7 +169,7 @@ func (s *Schema) decodeTop(dec *jsontext.Decoder) (*Vocabulary, error) {
 // Unlike the root, a subschema uses the vocabulary of its parent,
 // so it can be decoded in a single streaming pass.
 func (s *Schema) decodeSub(dec *jsontext.Decoder, vocabulary *Vocabulary) error {
-	switch dec.PeekKind() {
+	switch dec.PeekKind() { //nolint:exhaustive // The default case rejects the remaining kinds.
 	case 't', 'f':
 		tok, err := dec.ReadToken()
 		if err != nil {
@@ -193,7 +193,7 @@ func (s *Schema) decodeSub(dec *jsontext.Decoder, vocabulary *Vocabulary) error 
 			}
 			name := nameToken.String()
 			if seen[name] {
-				return fmt.Errorf("duplicate schema keyword %q", name)
+				return fmt.Errorf("%w: duplicate schema keyword %q", ErrInvalidSchema, name)
 			}
 			seen[name] = true
 			if err := s.addKeywordFromDecoder(name, dec, vocabulary); err != nil {
@@ -207,7 +207,7 @@ func (s *Schema) decodeSub(dec *jsontext.Decoder, vocabulary *Vocabulary) error 
 		return nil
 
 	default:
-		return fmt.Errorf("unexpected JSON %s while decoding schema", kindName(dec.PeekKind()))
+		return fmt.Errorf("%w: unexpected JSON %s while decoding schema", ErrInvalidSchema, kindName(dec.PeekKind()))
 	}
 }
 
@@ -215,7 +215,7 @@ func (s *Schema) decodeSub(dec *jsontext.Decoder, vocabulary *Vocabulary) error 
 // from dec and appends the resulting Part.
 func (s *Schema) addKeywordFromDecoder(keyword string, dec *jsontext.Decoder, vocabulary *Vocabulary) error {
 	if len(keyword) == 0 {
-		return errors.New("empty JSON keyword")
+		return fmt.Errorf("%w: empty JSON keyword", ErrInvalidSchema)
 	}
 
 	sk, ok := vocabulary.Keywords[keyword]
@@ -258,7 +258,7 @@ func (s *Schema) addKeywordFromDecoder(keyword string, dec *jsontext.Decoder, vo
 		}
 		spv = PartStrings(strs)
 	case ArgTypeStringOrStrings:
-		switch dec.PeekKind() {
+		switch dec.PeekKind() { //nolint:exhaustive // The default case rejects the remaining kinds.
 		case '"':
 			var str string
 			if err := decodeRaw(dec, keyword, "string", &str); err != nil {
@@ -272,7 +272,7 @@ func (s *Schema) addKeywordFromDecoder(keyword string, dec *jsontext.Decoder, vo
 			}
 			spv = PartStringOrStrings{Strings: strs}
 		default:
-			return fmt.Errorf("%q argument is %s, want string or array of string", keyword, kindName(dec.PeekKind()))
+			return fmt.Errorf("%w: %q argument is %s, want string or array of string", ErrInvalidSchema, keyword, kindName(dec.PeekKind()))
 		}
 	case ArgTypeInt:
 		var f float64
@@ -280,7 +280,7 @@ func (s *Schema) addKeywordFromDecoder(keyword string, dec *jsontext.Decoder, vo
 			return err
 		}
 		if f != math.Trunc(f) {
-			return fmt.Errorf("%q argument is non-integer, want integer", keyword)
+			return fmt.Errorf("%w: %q argument is non-integer, want integer", ErrInvalidSchema, keyword)
 		}
 		spv = PartInt(f)
 	case ArgTypeFloat:
@@ -303,7 +303,7 @@ func (s *Schema) addKeywordFromDecoder(keyword string, dec *jsontext.Decoder, vo
 		spv = PartSchemas(schemas)
 	case ArgTypeMapSchema:
 		if dec.PeekKind() != '{' {
-			return fmt.Errorf("%q argument is %s, want object", keyword, kindName(dec.PeekKind()))
+			return fmt.Errorf("%w: %q argument is %s, want object", ErrInvalidSchema, keyword, kindName(dec.PeekKind()))
 		}
 		if _, err := dec.ReadToken(); err != nil {
 			return motmedelErrors.NewWithTrace(fmt.Errorf("jsontext decoder read token: %w", err))
@@ -317,7 +317,7 @@ func (s *Schema) addKeywordFromDecoder(keyword string, dec *jsontext.Decoder, vo
 			// The token is voided by the next decoder call.
 			name := nameToken.String()
 			if _, ok := nm[name]; ok {
-				return fmt.Errorf("%q argument has duplicate member %q", keyword, name)
+				return fmt.Errorf("%w: %q argument has duplicate member %q", ErrInvalidSchema, keyword, name)
 			}
 			var sub Schema
 			if err := sub.decodeSub(dec, vocabulary); err != nil {
@@ -345,7 +345,7 @@ func (s *Schema) addKeywordFromDecoder(keyword string, dec *jsontext.Decoder, vo
 		}
 	case ArgTypeMapArrayOrSchema:
 		if dec.PeekKind() != '{' {
-			return fmt.Errorf("%q argument is %s, want object", keyword, kindName(dec.PeekKind()))
+			return fmt.Errorf("%w: %q argument is %s, want object", ErrInvalidSchema, keyword, kindName(dec.PeekKind()))
 		}
 		if _, err := dec.ReadToken(); err != nil {
 			return motmedelErrors.NewWithTrace(fmt.Errorf("jsontext decoder read token: %w", err))
@@ -358,11 +358,11 @@ func (s *Schema) addKeywordFromDecoder(keyword string, dec *jsontext.Decoder, vo
 			}
 			name := nameToken.String()
 			if _, ok := nm[name]; ok {
-				return fmt.Errorf("%q argument has duplicate member %q", keyword, name)
+				return fmt.Errorf("%w: %q argument has duplicate member %q", ErrInvalidSchema, keyword, name)
 			}
 
 			var as ArrayOrSchema
-			switch dec.PeekKind() {
+			switch dec.PeekKind() { //nolint:exhaustive // The default case rejects the remaining kinds.
 			case 't', 'f', '{':
 				var sub Schema
 				if err := sub.decodeSub(dec, vocabulary); err != nil {
@@ -376,7 +376,7 @@ func (s *Schema) addKeywordFromDecoder(keyword string, dec *jsontext.Decoder, vo
 				}
 				as.Array = strs
 			default:
-				return fmt.Errorf("%q argument item %s is %s, want schema or array of strings", keyword, name, kindName(dec.PeekKind()))
+				return fmt.Errorf("%w: %q argument item %s is %s, want schema or array of strings", ErrInvalidSchema, keyword, name, kindName(dec.PeekKind()))
 			}
 			nm[name] = as
 		}
@@ -404,7 +404,7 @@ func (s *Schema) addKeywordFromDecoder(keyword string, dec *jsontext.Decoder, vo
 // decodeSchemaArray decodes a JSON array of subschemas from dec.
 func decodeSchemaArray(dec *jsontext.Decoder, keyword string, vocabulary *Vocabulary) ([]*Schema, error) {
 	if dec.PeekKind() != '[' {
-		return nil, fmt.Errorf("%q argument is %s, want array", keyword, kindName(dec.PeekKind()))
+		return nil, fmt.Errorf("%w: %q argument is %s, want array", ErrInvalidSchema, keyword, kindName(dec.PeekKind()))
 	}
 	if _, err := dec.ReadToken(); err != nil {
 		return nil, motmedelErrors.NewWithTrace(fmt.Errorf("jsontext decoder read token: %w", err))
@@ -432,14 +432,14 @@ func decodeRaw(dec *jsontext.Decoder, keyword, want string, target any) error {
 		return motmedelErrors.NewWithTrace(fmt.Errorf("jsontext decoder read value: %w", err))
 	}
 	if err := jsonv2.Unmarshal(raw, target); err != nil {
-		return fmt.Errorf("%q argument is %s, want %s", keyword, kindName(kind), want)
+		return fmt.Errorf("%w: %q argument is %s, want %s", ErrInvalidSchema, keyword, kindName(kind), want)
 	}
 	return nil
 }
 
 // kindName returns a human-readable name for a JSON kind.
 func kindName(kind jsontext.Kind) string {
-	switch kind {
+	switch kind { //nolint:exhaustive // The default case names the remaining kinds generically.
 	case 'n':
 		return "null"
 	case 't', 'f':

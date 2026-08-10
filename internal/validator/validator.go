@@ -32,11 +32,11 @@ func ToInt(arg schema.PartValue) (schema.PartInt, error) {
 	case schema.PartFloat:
 		iv := math.Trunc(float64(v))
 		if iv != float64(v) {
-			return 0, fmt.Errorf("got float %v, expect int", arg)
+			return 0, fmt.Errorf("%w: got float %v, expect int", schema.ErrInvalidSchema, arg)
 		}
 		return schema.PartInt(int(iv)), nil
 	default:
-		return 0, fmt.Errorf("got %T, expect int", arg)
+		return 0, fmt.Errorf("%w: got %T, expect int", schema.ErrInvalidSchema, arg)
 	}
 }
 
@@ -48,7 +48,7 @@ func ToFloat(arg schema.PartValue) (schema.PartFloat, error) {
 	case schema.PartFloat:
 		return v, nil
 	default:
-		return 0, fmt.Errorf("got %T, expect float", arg)
+		return 0, fmt.Errorf("%w: got %T, expect float", schema.ErrInvalidSchema, arg)
 	}
 }
 
@@ -439,7 +439,7 @@ func ValidateContains(arg schema.PartSchema, instance any, state *schema.Validat
 
 		ln := v.Len()
 
-		for i := 0; i < ln; i++ {
+		for i := range ln {
 			e := v.Index(i).Interface()
 			if err := arg.S.ValidateSubSchema(e, state); err == nil {
 				topOK = true
@@ -504,6 +504,7 @@ func ValidateProperties(arg schema.PartMapSchema, instance any, state *schema.Va
 				if isMap {
 					m[jsonName] = defaultVal
 				} else if isPtrToMap {
+					//nolint:nilaway // A nil default value is a valid map entry.
 					(*pm)[jsonName] = defaultVal
 				}
 
@@ -790,6 +791,9 @@ func ValidateUnevaluatedProperties(arg schema.PartSchema, instance any, state *s
 	return topErr
 }
 
+// typeNameInteger is the JSON type name for integers.
+const typeNameInteger = "integer"
+
 // ValidateType implements the type keyword.
 func ValidateType(arg schema.PartStringOrStrings, instance any, state *schema.ValidationState) error {
 	match := func(typ string) (bool, error) {
@@ -828,6 +832,7 @@ func ValidateType(arg schema.PartStringOrStrings, instance any, state *schema.Va
 			if instance == nil {
 				return false, nil
 			}
+			//nolint:exhaustive // Only numeric kinds are numbers; the default case rejects the rest.
 			switch reflect.TypeOf(instance).Kind() {
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 				reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
@@ -845,7 +850,7 @@ func ValidateType(arg schema.PartStringOrStrings, instance any, state *schema.Va
 				return false, nil
 			}
 			return reflect.TypeOf(instance).Kind() == reflect.String, nil
-		case "integer":
+		case typeNameInteger:
 			if instance == nil {
 				return false, nil
 			}
@@ -859,7 +864,7 @@ func ValidateType(arg schema.PartStringOrStrings, instance any, state *schema.Va
 			}
 			return false, nil
 		default:
-			return false, fmt.Errorf(`"type" argument is unsupported string %q`, typ)
+			return false, fmt.Errorf(`%w: "type" argument is unsupported string %q`, schema.ErrInvalidSchema, typ)
 		}
 	}
 
@@ -868,14 +873,15 @@ func ValidateType(arg schema.PartStringOrStrings, instance any, state *schema.Va
 			return "null"
 		}
 
+		//nolint:exhaustive // The default case covers the remaining kinds with %T.
 		switch reflect.TypeOf(instance).Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-			return "integer"
+			return typeNameInteger
 		case reflect.Float32, reflect.Float64:
 			f := reflect.ValueOf(instance).Float()
 			if math.Trunc(f) == f && !math.IsInf(f, 0) {
-				return "integer"
+				return typeNameInteger
 			}
 			return "number"
 		case reflect.Bool:
@@ -924,7 +930,7 @@ func ValidateEnum(arg schema.PartAny, instance any, state *schema.ValidationStat
 	// and a []any to a slice of some other type.
 	s, ok := arg.V.([]any)
 	if !ok {
-		return fmt.Errorf(`"enum" argument is %T, must be []any`, arg.V)
+		return fmt.Errorf(`%w: "enum" argument is %T, must be []any`, schema.ErrInvalidSchema, arg.V)
 	}
 	for _, e := range s {
 		if reflect.DeepEqual(instance, e) {
@@ -951,7 +957,7 @@ func ValidateConst(arg schema.PartAny, instance any, state *schema.ValidationSta
 // ValidateMultipleOf implements the multipleOf keyword.
 func ValidateMultipleOf(arg schema.PartFloat, instance any, state *schema.ValidationState) error {
 	if arg <= 0 {
-		return fmt.Errorf(`"multipleOf" argument is %v, must be greater than zero`, arg)
+		return fmt.Errorf(`%w: "multipleOf" argument is %v, must be greater than zero`, schema.ErrInvalidSchema, arg)
 	}
 	f, ok := instanceFloat(instance)
 	if !ok {
@@ -1046,7 +1052,7 @@ func ValidateExclusiveMinimum(arg schema.PartFloat, instance any, state *schema.
 // ValidateMaxLength implements the maxLength keyword.
 func ValidateMaxLength(arg schema.PartInt, instance any, state *schema.ValidationState) error {
 	if arg < 0 {
-		return fmt.Errorf(`"maxLength" argument is %d, must be non-negative`, arg)
+		return fmt.Errorf(`%w: "maxLength" argument is %d, must be non-negative`, schema.ErrInvalidSchema, arg)
 	}
 	if s, ok := instanceString(instance); ok {
 		if schema.PartInt(utf8.RuneCountInString(s)) > arg {
@@ -1061,7 +1067,7 @@ func ValidateMaxLength(arg schema.PartInt, instance any, state *schema.Validatio
 // ValidateMinLength implements the minLength keyword.
 func ValidateMinLength(arg schema.PartInt, instance any, state *schema.ValidationState) error {
 	if arg < 0 {
-		return fmt.Errorf(`"minLength" argument is %d, must be non-negative`, arg)
+		return fmt.Errorf(`%w: "minLength" argument is %d, must be non-negative`, schema.ErrInvalidSchema, arg)
 	}
 	if s, ok := instanceString(instance); ok {
 		if schema.PartInt(utf8.RuneCountInString(s)) < arg {
@@ -1154,7 +1160,7 @@ func ValidateUniqueItems(arg schema.PartBool, instance any, state *schema.Valida
 	ln := v.Len()
 
 	allComparable := true
-	for i := 0; i < ln; i++ {
+	for i := range ln {
 		if !v.Index(i).Comparable() {
 			allComparable = false
 			break
@@ -1164,7 +1170,7 @@ func ValidateUniqueItems(arg schema.PartBool, instance any, state *schema.Valida
 	if allComparable {
 		m := make(map[any]bool)
 
-		for i := 0; i < ln; i++ {
+		for i := range ln {
 			evi := v.Index(i).Interface()
 			if m[evi] {
 				return &schema.ValidationError{
@@ -1174,7 +1180,7 @@ func ValidateUniqueItems(arg schema.PartBool, instance any, state *schema.Valida
 			m[evi] = true
 		}
 	} else {
-		for i := 0; i < ln; i++ {
+		for i := range ln {
 			for j := i + 1; j < ln; j++ {
 				if reflect.DeepEqual(v.Index(i).Interface(), v.Index(j).Interface()) {
 					return &schema.ValidationError{
@@ -1267,7 +1273,7 @@ func ValidateRequired(arg schema.PartStrings, instance any, state *schema.Valida
 func ValidateDependentRequired(arg schema.PartAny, instance any, state *schema.ValidationState) error {
 	m, ok := arg.V.(map[string]any)
 	if !ok {
-		return fmt.Errorf(`"dependentRequired" argument type %T, want map[string]any`, arg)
+		return fmt.Errorf(`%w: "dependentRequired" argument type %T, want map[string]any`, schema.ErrInvalidSchema, arg)
 	}
 
 	names, ok := instanceFieldNames(instance)
@@ -1282,13 +1288,13 @@ func ValidateDependentRequired(arg schema.PartAny, instance any, state *schema.V
 
 		ns, ok := v.([]any)
 		if !ok {
-			return fmt.Errorf(`"dependentRequired element %q type %T, want []any`, k, v)
+			return fmt.Errorf(`%w: "dependentRequired" element %q type %T, want []any`, schema.ErrInvalidSchema, k, v)
 		}
 
 		for _, e := range ns {
 			n, ok := e.(string)
 			if !ok {
-				return fmt.Errorf(`"dependentRequired element %q element type %T, want string`, k, e)
+				return fmt.Errorf(`%w: "dependentRequired" element %q element type %T, want string`, schema.ErrInvalidSchema, k, e)
 			}
 			if _, found := names.byExactName[n]; !found {
 				return &schema.ValidationError{

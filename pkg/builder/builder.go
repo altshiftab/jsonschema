@@ -163,8 +163,16 @@ func (b *Builder) AddAny(keyword *schema.Keyword, v any) *Builder {
 	return b
 }
 
+// typeNameInteger and typeNameObject are the JSON type names that
+// schema inference uses more than once.
+const (
+	typeNameInteger = "integer"
+	typeNameObject  = "object"
+)
+
 // check panics if a keyword is used with the wrong type.
 func (b *Builder) check(keyword *schema.Keyword, want schema.ArgType) {
+	//nolint:exhaustive // Any argument type other than the wanted one is a programming error.
 	switch keyword.ArgType {
 	case want, schema.ArgTypeAny:
 	default:
@@ -286,7 +294,7 @@ func inferType[Builder inferBuilder[Builder]](builder Builder, typ reflect.Type,
 
 	if typ.Name() != "" {
 		if seen[typ] {
-			return z, fmt.Errorf("type cycle at %s", typ)
+			return z, fmt.Errorf("%w: type cycle at %s", errors.ErrUnsupported, typ)
 		}
 		seen[typ] = true
 		defer delete(seen, typ)
@@ -307,44 +315,45 @@ func inferType[Builder inferBuilder[Builder]](builder Builder, typ reflect.Type,
 	}
 
 	addType := ""
+	//nolint:exhaustive // The default case rejects the remaining kinds.
 	switch typ.Kind() {
 	case reflect.Bool:
 		addType = "boolean"
 
 	case reflect.Int, reflect.Int64:
-		addType = "integer"
+		addType = typeNameInteger
 
 	case reflect.Uint, reflect.Uint64, reflect.Uintptr:
-		addType = "integer"
+		addType = typeNameInteger
 		builder.AddMinimum(0)
 
 	case reflect.Int8:
-		addType = "integer"
+		addType = typeNameInteger
 		builder.AddMinimum(math.MinInt8)
 		builder.AddMaximum(math.MaxInt8)
 
 	case reflect.Uint8:
-		addType = "integer"
+		addType = typeNameInteger
 		builder.AddMinimum(0)
 		builder.AddMaximum(math.MaxUint8)
 
 	case reflect.Int16:
-		addType = "integer"
+		addType = typeNameInteger
 		builder.AddMinimum(math.MinInt16)
 		builder.AddMaximum(math.MaxInt16)
 
 	case reflect.Uint16:
-		addType = "integer"
+		addType = typeNameInteger
 		builder.AddMinimum(0)
 		builder.AddMaximum(math.MaxUint16)
 
 	case reflect.Int32:
-		addType = "integer"
+		addType = typeNameInteger
 		builder.AddMinimum(math.MinInt32)
 		builder.AddMaximum(math.MaxInt32)
 
 	case reflect.Uint32:
-		addType = "integer"
+		addType = typeNameInteger
 		builder.AddMinimum(0)
 		builder.AddMaximum(math.MaxUint32)
 
@@ -358,17 +367,17 @@ func inferType[Builder inferBuilder[Builder]](builder Builder, typ reflect.Type,
 		// Nothing to do.
 
 	case reflect.Map:
-		addType = "object"
+		addType = typeNameObject
 		if typ.Key().Kind() != reflect.String {
 			if opts != nil && opts.IgnoreInvalidTypes {
 				return z, nil
 			}
-			return z, fmt.Errorf("unsupported map key type %s", typ.Key())
+			return z, fmt.Errorf("%w: map key type %s", errors.ErrUnsupported, typ.Key())
 		}
 		be := builder.NewSubBuilder()
 		be, err := inferType[Builder](be, typ.Elem(), seen, opts)
 		if err != nil {
-			return z, fmt.Errorf("map value schema: %v", err)
+			return z, fmt.Errorf("map value schema: %w", err)
 		}
 		if !reflect.ValueOf(be).IsZero() {
 			builder = builder.AddAdditionalProperties(be.Build())
@@ -379,7 +388,7 @@ func inferType[Builder inferBuilder[Builder]](builder Builder, typ reflect.Type,
 		be := builder.NewSubBuilder()
 		be, err := inferType[Builder](be, typ.Elem(), seen, opts)
 		if err != nil {
-			return z, fmt.Errorf("slice/array element schema: %v", err)
+			return z, fmt.Errorf("slice/array element schema: %w", err)
 		}
 		if !reflect.ValueOf(be).IsZero() {
 			builder = builder.AddItemsSchema(be.Build())
@@ -391,7 +400,7 @@ func inferType[Builder inferBuilder[Builder]](builder Builder, typ reflect.Type,
 		}
 
 	case reflect.Struct:
-		addType = "object"
+		addType = typeNameObject
 
 		var properties map[string]*schema.Schema
 		var required []string
@@ -421,8 +430,8 @@ func inferType[Builder inferBuilder[Builder]](builder Builder, typ reflect.Type,
 					case "$schema":
 						// ignore
 					case "type":
-						if part.Value.(schema.PartStringOrStrings).String != "object" {
-							return z, fmt.Errorf(`custom schema for embedded field must have type "object", got %q`, part.Value)
+						if part.Value.(schema.PartStringOrStrings).String != typeNameObject {
+							return z, fmt.Errorf(`%w: custom schema for embedded field must have type "object", got %q`, errors.ErrUnsupported, part.Value)
 						}
 						sawType = true
 					case "properties":
@@ -433,11 +442,11 @@ func inferType[Builder inferBuilder[Builder]](builder Builder, typ reflect.Type,
 							properties[n] = s.Clone()
 						}
 					default:
-						return z, fmt.Errorf(`override for embedded field can only have "type" and "properties"; this has %q`, part.Keyword.Name)
+						return z, fmt.Errorf(`%w: override for embedded field can only have "type" and "properties"; this has %q`, errors.ErrUnsupported, part.Keyword.Name)
 					}
 				}
 				if !sawType {
-					return z, errors.New(`custom schema for embedded field must have type "object", no type given`)
+					return z, fmt.Errorf(`%w: custom schema for embedded field must have type "object", no type given`, errors.ErrUnsupported)
 				}
 
 				// Since we have a schema, skip the fields.
@@ -464,7 +473,7 @@ func inferType[Builder inferBuilder[Builder]](builder Builder, typ reflect.Type,
 			bf := builder.NewSubBuilder()
 			bf, err := inferType[Builder](bf, field.Type, seen, opts)
 			if err != nil {
-				return z, fmt.Errorf("field %s.%s schema: %v", typ, field.Name, err)
+				return z, fmt.Errorf("field %s.%s schema: %w", typ, field.Name, err)
 			}
 			if reflect.ValueOf(bf).IsZero() {
 				continue
@@ -473,7 +482,7 @@ func inferType[Builder inferBuilder[Builder]](builder Builder, typ reflect.Type,
 			if tag, ok := field.Tag.Lookup("jsonschema"); ok {
 				bf, err = addFieldTag(bf, tag)
 				if err != nil {
-					return z, fmt.Errorf("field %s.%s: %v", typ, field.Name, err)
+					return z, fmt.Errorf("field %s.%s: %w", typ, field.Name, err)
 				}
 			}
 
@@ -506,7 +515,7 @@ func inferType[Builder inferBuilder[Builder]](builder Builder, typ reflect.Type,
 			return z, nil
 		}
 
-		return z, fmt.Errorf("unsupported jsonschema type %s", typ)
+		return z, fmt.Errorf("%w: jsonschema type %s", errors.ErrUnsupported, typ)
 	}
 
 	if addType != "" {
@@ -520,9 +529,9 @@ func inferType[Builder inferBuilder[Builder]](builder Builder, typ reflect.Type,
 	return builder, nil
 }
 
-// fieldJSON reports some characteristics of the JSON encoding
-// for a struct field.
-func fieldJSON(sf *reflect.StructField) (name string, omit, optional bool) {
+// fieldJSON reports the JSON name of a struct field, whether the
+// field is omitted, and whether it is optional.
+func fieldJSON(sf *reflect.StructField) (string, bool, bool) {
 	if !sf.IsExported() {
 		// Omit unexported field.
 		return "", true, false
@@ -546,6 +555,7 @@ func fieldJSON(sf *reflect.StructField) (name string, omit, optional bool) {
 	}
 
 	// The field is optional if it has a omitzero or omitempty tag.
+	optional := false
 	for opts != "" {
 		var opt string
 		opt, opts, _ = strings.Cut(opts, ",")
@@ -579,6 +589,7 @@ func addParts[Builder inferBuilder[Builder]](builder Builder, s *schema.Schema, 
 				pv.Strings = []string{"null", pv.String}
 				pv.String = ""
 			}
+			//nolint:nilaway // slices.Clone returns nil only for a nil slice, in which case this loop does not run.
 			parts[i].Value = pv
 			break
 		}
@@ -590,7 +601,7 @@ func addParts[Builder inferBuilder[Builder]](builder Builder, s *schema.Schema, 
 // addFieldTag parses the jsonschema field tag and adds elements to builder.
 func addFieldTag[Builder inferBuilder[Builder]](builder Builder, tag string) (Builder, error) {
 	if tag == "" {
-		return builder, errors.New("empty jsonschema tag")
+		return builder, fmt.Errorf("%w: empty jsonschema tag", errors.ErrUnsupported)
 	}
 
 	var enums []any
@@ -608,11 +619,11 @@ func addFieldTag[Builder inferBuilder[Builder]](builder Builder, tag string) (Bu
 		switch keyword {
 		case "enum":
 			if val == "" {
-				return builder, errors.New("missing enum value in jsonschema tag")
+				return builder, fmt.Errorf("%w: missing enum value in jsonschema tag", errors.ErrUnsupported)
 			}
 			enums = append(enums, val)
 		default:
-			return builder, fmt.Errorf("unrecognized jsonschema tag %q", keyword)
+			return builder, fmt.Errorf("%w: unrecognized jsonschema tag %q", errors.ErrUnsupported, keyword)
 		}
 	}
 

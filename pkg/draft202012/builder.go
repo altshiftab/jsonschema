@@ -17,6 +17,15 @@ import (
 	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
+// Names of the core keywords handled during reference resolution.
+const (
+	idKeywordName            = "$id"
+	anchorKeywordName        = "$anchor"
+	dynamicAnchorKeywordName = "$dynamicAnchor"
+	refKeywordName           = "$ref"
+	dynamicRefKeywordName    = "$dynamicRef"
+)
+
 // Builder is a JSON schema builder.
 // Builder provides a list of methods that may be used to add
 // new elements to the schema.
@@ -184,7 +193,7 @@ func installAnchorParts(s *schema.Schema, anchors []*recordDynamicAnchor, isReso
 		return
 	}
 	if !isResourceRoot {
-		if _, ok := s.LookupKeyword("$id"); ok {
+		if _, ok := s.LookupKeyword(idKeywordName); ok {
 			// A nested resource; its own anchors are
 			// installed separately.
 			return
@@ -225,17 +234,17 @@ func resolveIDs(subSchema, base *schema.Schema, state *resolveState, subData sub
 	for _, part := range subSchema.Parts {
 		var err error
 		switch part.Keyword.Name {
-		case "$id":
+		case idKeywordName:
 			subData, err = resolveID(subSchema, part.Value, state, subData)
 			base = subSchema
-		case "$anchor":
+		case anchorKeywordName:
 			_, err = resolveAnchor(subSchema, false, part.Value, state, subData)
-		case "$dynamicAnchor":
+		case dynamicAnchorKeywordName:
 			if dynamicAnchor != "" {
-				return fmt.Errorf("%s: more than one $dynamicAnchor", subData.Name())
+				return fmt.Errorf("%w: %s: more than one $dynamicAnchor", schema.ErrInvalidSchema, subData.Name())
 			}
 			dynamicAnchor, err = resolveAnchor(subSchema, true, part.Value, state, subData)
-		case "$ref", "$dynamicRef":
+		case refKeywordName, dynamicRefKeywordName:
 			// We need the URI when resolving references.
 			if state.schemas == nil {
 				state.schemas = make(map[*schema.Schema]schemaData)
@@ -285,7 +294,7 @@ func resolveID(subSchema *schema.Schema, value schema.PartValue, state *resolveS
 		)
 	}
 	if uri.Fragment != "" {
-		return subInfo{}, fmt.Errorf(`%s: "$id" %q contains non-empty fragment`, subData.Name(), arg)
+		return subInfo{}, fmt.Errorf(`%w: %s: "$id" %q contains non-empty fragment`, schema.ErrInvalidSchema, subData.Name(), arg)
 	}
 	var newURI *url.URL
 	if uri.IsAbs() || subData.uri == nil {
@@ -326,7 +335,7 @@ func resolveAnchor(subSchema *schema.Schema, dynamic bool, value schema.PartValu
 	anchorStr := anchorURI.String()
 
 	if _, ok := state.anchors[anchorStr]; ok {
-		return "", fmt.Errorf("%s: duplicate anchor %q", subData.Name(), anchorStr)
+		return "", fmt.Errorf("%w: %s: duplicate anchor %q", schema.ErrInvalidSchema, subData.Name(), anchorStr)
 	}
 	state.anchors[anchorStr] = anchorData{
 		schema:  subSchema,
@@ -345,15 +354,15 @@ func resolveRefs(subSchema *schema.Schema, state *resolveState, subData subInfo)
 	for _, part := range subSchema.Parts {
 		var err error
 		switch part.Keyword.Name {
-		case "$ref":
+		case refKeywordName:
 			if sawRef {
-				return fmt.Errorf("%s: more than one $ref", subData.Name())
+				return fmt.Errorf("%w: %s: more than one $ref", schema.ErrInvalidSchema, subData.Name())
 			}
 			sawRef = true
 			err = resolveRef(subSchema, false, part.Value, state, subData)
-		case "$dynamicRef":
+		case dynamicRefKeywordName:
 			if sawDynamicRef {
-				return fmt.Errorf("%s: more than one $dynamicRef", subData.Name())
+				return fmt.Errorf("%w: %s: more than one $dynamicRef", schema.ErrInvalidSchema, subData.Name())
 			}
 			sawDynamicRef = true
 			err = resolveRef(subSchema, true, part.Value, state, subData)
@@ -448,11 +457,11 @@ func resolveRef(subSchema *schema.Schema, dynamic bool, value schema.PartValue, 
 
 	if frag != "" {
 		if !strings.HasPrefix(frag, "/") {
-			return fmt.Errorf("%s: could not find fragment %q from URI %q", subData.Name(), frag, refURI)
+			return fmt.Errorf("%w: %s: could not find fragment %q from URI %q", schema.ErrInvalidSchema, subData.Name(), frag, refURI)
 		}
 
 		if refSchema, err = jsonpointer.DerefSchema(SchemaID, refSchema, frag); err != nil {
-			return fmt.Errorf("%s: could not resolve JSON pointer %q from URI %q: %v", subData.Name(), frag, refURI, err)
+			return fmt.Errorf("%w: %s: could not resolve JSON pointer %q from URI %q: %w", schema.ErrInvalidSchema, subData.Name(), frag, refURI, err)
 		}
 	}
 
@@ -484,7 +493,7 @@ func resolveURI(refURI *url.URL, state *resolveState, subData subInfo) (*schema.
 
 	// The URI refers to something elsewhere.
 	if !noFragURI.IsAbs() {
-		return nil, fmt.Errorf("%s: could not resolve ref to %q", subData.Name(), noFragURI)
+		return nil, fmt.Errorf("%w: %s: could not resolve ref to %q", schema.ErrInvalidSchema, subData.Name(), noFragURI)
 	}
 
 	// Check for a reference to the metaschema.
@@ -498,7 +507,7 @@ func resolveURI(refURI *url.URL, state *resolveState, subData subInfo) (*schema.
 
 	// We need to load the schema from a remote source.
 	if state.ropts.Loader == nil {
-		return nil, fmt.Errorf("%s: remote loading of URI %q not permitted", subData.Name(), noFragURI)
+		return nil, fmt.Errorf("%w: %s: remote loading of URI %q not permitted", schema.ErrInvalidSchema, subData.Name(), noFragURI)
 	}
 
 	// Check the cache.
@@ -516,7 +525,7 @@ func resolveURI(refURI *url.URL, state *resolveState, subData subInfo) (*schema.
 		)
 	}
 	if refSchema == nil {
-		return nil, fmt.Errorf("%s: loading of URI %q returned no schema and no error", subData.Name(), noFragURI)
+		return nil, fmt.Errorf("%w: %s: loading of URI %q returned no schema and no error", schema.ErrInvalidSchema, subData.Name(), noFragURI)
 	}
 
 	// Cache the schema. We must do before resolving the schema,
@@ -525,7 +534,7 @@ func resolveURI(refURI *url.URL, state *resolveState, subData subInfo) (*schema.
 
 	// Resolve the schema in the current resolution state.
 	if err := resolveRefSchema(noFragURI, refSchema, state); err != nil {
-		return nil, fmt.Errorf("%s: resolving schema at URI %q failed: %v", subData.Name(), noFragURI, err)
+		return nil, fmt.Errorf("%w: %s: resolving schema at URI %q failed: %w", schema.ErrInvalidSchema, subData.Name(), noFragURI, err)
 	}
 
 	return refSchema, nil

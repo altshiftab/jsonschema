@@ -77,7 +77,7 @@ func validateRef(arg schema.PartString, instance any, state *schema.ValidationSt
 		}
 	}
 	// This should never happen.
-	return fmt.Errorf(`reference %q unresolved`, arg)
+	return fmt.Errorf(`%w: reference %q unresolved`, schema.ErrInvalidSchema, arg)
 }
 
 // validateDynamicRef validates a $dynamicRef keyword.
@@ -109,7 +109,7 @@ func validateDynamicRef(arg schema.PartString, instance any, state *schema.Valid
 			}
 
 			if s == nil {
-				return fmt.Errorf("dynamic reference %q unresolved", arg)
+				return fmt.Errorf("%w: dynamic reference %q unresolved", schema.ErrInvalidSchema, arg)
 			}
 		}
 	}

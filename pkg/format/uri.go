@@ -13,7 +13,7 @@ import (
 	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
-// uriOrIRI is an enum
+// uriOrIRI is an enum.
 type uriOrIRI int
 
 const (
@@ -39,14 +39,14 @@ func uriIriFormat(instance any, state *schema.ValidationState, ui uriOrIRI) erro
 	}
 	uri, err := url.Parse(s)
 	if err != nil {
-		return fmt.Errorf("%q is not a valid URI: %v", s, err)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q is not a valid URI: %v", s, err)}
 	}
 	if !uri.IsAbs() {
-		return fmt.Errorf("%q is not an absolute URI", s)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q is not an absolute URI", s)}
 	}
 
 	if !checkURI(uri, ui) {
-		return fmt.Errorf("%q failed JSON schema checks", s)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q failed JSON schema checks", s)}
 	}
 
 	return nil
@@ -72,16 +72,16 @@ func uriIriReferenceFormat(instance any, state *schema.ValidationState, ui uriOr
 	// This keeps the testsuite happy, and avoids parsing
 	// what looks like an absolute URI as a relative one.
 	if strings.HasPrefix(s, `\\`) {
-		return fmt.Errorf(`%q starts with \\`, s)
+		return &schema.ValidationError{Message: fmt.Sprintf(`%q starts with \\`, s)}
 	}
 
 	uri, err := url.Parse(s)
 	if err != nil {
-		return fmt.Errorf("%q is not a valid URI: %v", s, err)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q is not a valid URI: %v", s, err)}
 	}
 
 	if !checkURI(uri, ui) {
-		return fmt.Errorf("%q failed JSON schema checks", s)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q failed JSON schema checks", s)}
 	}
 
 	return nil

@@ -22,10 +22,10 @@ func jsonPointerFormat(instance any, state *schema.ValidationState) error {
 		return nil
 	}
 	if !strings.HasPrefix(s, "/") {
-		return fmt.Errorf("%q is not a valid JSON pointer", s)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q is not a valid JSON pointer", s)}
 	}
 	if !checkJSONPointerEscapes(s) {
-		return fmt.Errorf("%q has invalid escaping for a JSON pointer", s)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q has invalid escaping for a JSON pointer", s)}
 	}
 	return nil
 }
@@ -39,7 +39,7 @@ func relativeJSONPointerFormat(instance any, state *schema.ValidationState) erro
 
 	orig := s
 	bad := func() error {
-		return fmt.Errorf("%q is not a valid relative JSON pointer", orig)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q is not a valid relative JSON pointer", orig)}
 	}
 
 	if len(s) == 0 {
@@ -64,7 +64,7 @@ func relativeJSONPointerFormat(instance any, state *schema.ValidationState) erro
 	}
 
 	if !checkJSONPointerEscapes(s) {
-		return fmt.Errorf("%q has invalid escaping for a JSON pointer", s)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q has invalid escaping for a JSON pointer", s)}
 	}
 	return nil
 }

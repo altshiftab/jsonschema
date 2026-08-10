@@ -19,7 +19,7 @@ func uuidFormat(instance any, state *schema.ValidationState) error {
 
 	orig := s
 	bad := func() error {
-		return fmt.Errorf("%q is not a valid UUID", orig)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q is not a valid UUID", orig)}
 	}
 
 	hexOctets := func(want int) bool {

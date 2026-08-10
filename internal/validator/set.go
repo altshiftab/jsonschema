@@ -7,6 +7,8 @@ package validator
 import (
 	"fmt"
 	"reflect"
+
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 // setDefault sets a location in the instance to its default value.
@@ -14,7 +16,7 @@ func setDefault(to reflect.Value, from any) error {
 	fromV := reflect.ValueOf(from)
 	toType := to.Type()
 	if !fromV.CanConvert(toType) {
-		return fmt.Errorf("when setting default can't convert value %v of type %T to type %s", fromV, fromV, toType)
+		return fmt.Errorf("%w: when setting default can't convert value %v of type %T to type %s", schema.ErrInvalidSchema, fromV, fromV, toType)
 	}
 	fromV = fromV.Convert(toType)
 	to.Set(fromV)

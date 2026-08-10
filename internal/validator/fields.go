@@ -6,6 +6,7 @@ package validator
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"reflect"
 	"slices"
@@ -88,7 +89,7 @@ func instanceFieldNames(instance any) (structFields, bool) {
 func setField(instance any, jsonName string, val any) error {
 	v := reflect.Indirect(reflect.ValueOf(instance))
 	if !v.IsValid() {
-		return fmt.Errorf("cannot set field %q in nil instance", jsonName)
+		return fmt.Errorf("%w: cannot set field %q in nil instance", errors.ErrUnsupported, jsonName)
 	}
 
 	if m, ok := v.Interface().(map[string]any); ok {
@@ -151,7 +152,7 @@ func typeFields(t reflect.Type) structFields {
 			visited[f.typ] = true
 
 			// Scan f.typ for fields to include.
-			for i := 0; i < f.typ.NumField(); i++ {
+			for i := range f.typ.NumField() {
 				sf := f.typ.Field(i)
 				if sf.Anonymous {
 					t := sf.Type
@@ -246,6 +247,7 @@ func typeFields(t reflect.Type) structFields {
 	// of field index length. Loop over names; for each name, delete
 	// hidden fields by choosing the one dominant field that survives.
 	out := fields[:0]
+	//nolint:wastedassign // Loop shape copied from encoding/json; advance is set before each use.
 	for advance, i := 0, 0; i < len(fields); i += advance {
 		// One iteration per name.
 		// Find the sequence of fields with the name of this first field.

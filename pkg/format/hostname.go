@@ -22,7 +22,7 @@ func hostnameFormat(instance any, state *schema.ValidationState) error {
 		return nil
 	}
 	if !isValidHostname(s, false) {
-		return fmt.Errorf("%q is not a valid hostname", s)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q is not a valid hostname", s)}
 	}
 	return nil
 }
@@ -34,7 +34,7 @@ func idnHostnameFormat(instance any, state *schema.ValidationState) error {
 		return nil
 	}
 	if !isValidHostname(s, true) {
-		return fmt.Errorf("%q is not a valid internationalized hostname", s)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q is not a valid internationalized hostname", s)}
 	}
 	return nil
 }

@@ -58,7 +58,7 @@ func TestMain(m *testing.M) {
 // an error.
 func loadRemote(_ string, uri *url.URL) (*schema.Schema, error) {
 	if uri.Host != "localhost:1234" {
-		return nil, fmt.Errorf("unknown remote schema host %q", uri.Host)
+		return nil, fmt.Errorf("%w: unknown remote schema host %q", errors.ErrUnsupported, uri.Host)
 	}
 
 	relativePath, err := filepath.Localize(strings.TrimPrefix(uri.Path, "/"))
@@ -111,6 +111,7 @@ func runSuiteFile(
 	base := filepath.Base(path)
 	for _, group := range groups {
 		t.Run(base+"/"+group.Description, func(t *testing.T) {
+			t.Parallel()
 			if reason, ok := skips[base+"/"+group.Description]; ok {
 				t.Skipf("%s", reason)
 			}
@@ -122,6 +123,7 @@ func runSuiteFile(
 
 			for _, testCase := range group.Tests {
 				t.Run(testCase.Description, func(t *testing.T) {
+					t.Parallel()
 					key := base + "/" + group.Description + "/" + testCase.Description
 					if reason, ok := skips[key]; ok {
 						t.Skipf("%s", reason)

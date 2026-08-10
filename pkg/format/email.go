@@ -19,7 +19,7 @@ func emailFormat(instance any, state *schema.ValidationState) error {
 		return nil
 	}
 	if !isValidEmail(s, false) {
-		return fmt.Errorf("%q is not a valid email address", s)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q is not a valid email address", s)}
 	}
 	return nil
 }
@@ -31,13 +31,15 @@ func idnEmailFormat(instance any, state *schema.ValidationState) error {
 		return nil
 	}
 	if !isValidEmail(s, true) {
-		return fmt.Errorf("%q is not a valid extended email address", s)
+		return &schema.ValidationError{Message: fmt.Sprintf("%q is not a valid extended email address", s)}
 	}
 	return nil
 }
 
 // isValidEmail reports whether s is a valid RFC5321 email address.
 // If idn is true, this permits RFC6531 internationalized email addresses.
+//
+//nolint:dupword // RFC 5321 grammar quoted verbatim.
 func isValidEmail(s string, idn bool) bool {
 	// This is the syntax we are supposed to parse.
 	// But in fact we don't bother, and just defer to

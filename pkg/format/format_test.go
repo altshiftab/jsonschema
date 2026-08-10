@@ -35,6 +35,7 @@ func TestDateFormat(t *testing.T) {
 	}
 }
 
+//nolint:dupl // Per-format table tests are intentionally parallel in structure.
 func TestDateTimeFormat(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
@@ -146,6 +147,7 @@ func TestDurationFormat(t *testing.T) {
 	}
 }
 
+//nolint:dupl // Per-format table tests are intentionally parallel in structure.
 func TestEmailFormat(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
@@ -176,6 +178,7 @@ func TestEmailFormat(t *testing.T) {
 	}
 }
 
+//nolint:dupl // Per-format table tests are intentionally parallel in structure.
 func TestIdnEmailFormat(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
@@ -186,7 +189,7 @@ func TestIdnEmailFormat(t *testing.T) {
 		{name: "non-string instance", instance: 42, wantErr: false},
 		{name: "ASCII address", instance: "user@example.com", wantErr: false},
 		{name: "non-ASCII domain", instance: "user@exämple.com", wantErr: false},
-		{name: "non-ASCII local part and domain", instance: "用户@例子.jp", wantErr: false},
+		{name: "non-ASCII local part and domain", instance: "用户@例子.jp", wantErr: false}, //nolint:gosmopolitan // Intentional Unicode test data for IDN formats.
 		{name: "missing at sign", instance: "plainaddress", wantErr: true},
 		{name: "missing domain", instance: "user@", wantErr: true},
 		{name: "display name present", instance: "Joe <user@example.com>", wantErr: true},
@@ -250,8 +253,8 @@ func TestIdnHostnameFormat(t *testing.T) {
 		{name: "non-string instance", instance: 42, wantErr: false},
 		{name: "ASCII hostname", instance: "example.com", wantErr: false},
 		{name: "non-ASCII latin", instance: "exämple.com", wantErr: false},
-		{name: "han labels", instance: "实例.测试", wantErr: false},
-		{name: "japanese label", instance: "例え.jp", wantErr: false},
+		{name: "han labels", instance: "实例.测试", wantErr: false},     //nolint:gosmopolitan // Intentional Unicode test data for IDN formats.
+		{name: "japanese label", instance: "例え.jp", wantErr: false}, //nolint:gosmopolitan // Intentional Unicode test data for IDN formats.
 		{name: "IPv4 address accepted", instance: "127.0.0.1", wantErr: false},
 		{name: "underscore", instance: "under_score.com", wantErr: true},
 		{name: "disallowed arabic tatweel", instance: "exـample.com", wantErr: true},
@@ -276,6 +279,7 @@ func TestIdnHostnameFormat(t *testing.T) {
 	}
 }
 
+//nolint:dupl // Per-format table tests are intentionally parallel in structure.
 func TestIPv4Format(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
@@ -304,6 +308,7 @@ func TestIPv4Format(t *testing.T) {
 	}
 }
 
+//nolint:dupl // Per-format table tests are intentionally parallel in structure.
 func TestIPv6Format(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
@@ -332,6 +337,7 @@ func TestIPv6Format(t *testing.T) {
 	}
 }
 
+//nolint:dupl // Per-format table tests are intentionally parallel in structure.
 func TestURIFormat(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
@@ -361,6 +367,7 @@ func TestURIFormat(t *testing.T) {
 	}
 }
 
+//nolint:dupl // Per-format table tests are intentionally parallel in structure.
 func TestURIReferenceFormat(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
@@ -388,6 +395,7 @@ func TestURIReferenceFormat(t *testing.T) {
 	}
 }
 
+//nolint:dupl // Per-format table tests are intentionally parallel in structure.
 func TestIRIFormat(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
@@ -413,6 +421,7 @@ func TestIRIFormat(t *testing.T) {
 	}
 }
 
+//nolint:dupl // Per-format table tests are intentionally parallel in structure.
 func TestIRIReferenceFormat(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
@@ -438,6 +447,7 @@ func TestIRIReferenceFormat(t *testing.T) {
 	}
 }
 
+//nolint:dupl // Per-format table tests are intentionally parallel in structure.
 func TestUUIDFormat(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
@@ -467,6 +477,7 @@ func TestUUIDFormat(t *testing.T) {
 	}
 }
 
+//nolint:dupl // Per-format table tests are intentionally parallel in structure.
 func TestJSONPointerFormat(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
@@ -497,6 +508,7 @@ func TestJSONPointerFormat(t *testing.T) {
 	}
 }
 
+//nolint:dupl // Per-format table tests are intentionally parallel in structure.
 func TestRelativeJSONPointerFormat(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
@@ -528,6 +540,7 @@ func TestRelativeJSONPointerFormat(t *testing.T) {
 	}
 }
 
+//nolint:dupl // Per-format table tests are intentionally parallel in structure.
 func TestRegexFormat(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {

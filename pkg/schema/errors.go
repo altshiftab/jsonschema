@@ -12,6 +12,13 @@ import (
 	motmedelErrors "github.com/Motmedel/utils_go/pkg/errors"
 )
 
+// ErrInvalidSchema indicates that a schema document itself is invalid:
+// unparseable JSON, a keyword argument of the wrong type, or an
+// unresolvable reference. It is not a validation failure of an
+// instance, and deliberately does not match the Motmedel client-input
+// error categories: an invalid schema is a programming error.
+var ErrInvalidSchema = errors.New("invalid schema")
+
 // ValidationError is returned by a validation function
 // when an instance fails validation.
 type ValidationError struct {
@@ -34,6 +41,8 @@ func (ve *ValidationError) Error() string {
 }
 
 // ValidationErrors is a collection of ValidationError values.
+//
+//nolint:errname // Established API name for an aggregation of validation errors.
 type ValidationErrors struct {
 	Errs []*ValidationError
 }
@@ -80,6 +89,7 @@ func NewValidateError(err error, errs []*ValidationError) error {
 // This deliberately matches only direct validation error values;
 // validation errors are aggregated, not wrapped.
 func IsValidationError(err error) bool {
+	//nolint:errorlint // Validation errors are aggregated, not wrapped; direct type matching is deliberate.
 	switch err.(type) {
 	case *ValidationError, *ValidationErrors:
 		return true
@@ -94,6 +104,7 @@ func AddError(perr *error, err error, loc string) {
 		return
 	}
 
+	//nolint:errorlint // Validation errors are aggregated, not wrapped; direct type matching is deliberate.
 	if ve, ok := err.(*ValidationError); ok {
 		// Build a combined keywordLocation by prefixing the provided loc
 		// to any existing keywordLocation, using JSON Pointer rules.
@@ -139,6 +150,7 @@ func AddError(perr *error, err error, loc string) {
 		AddValidationErrorStruct(perr, nev)
 		return
 	}
+	//nolint:errorlint // Validation errors are aggregated, not wrapped; direct type matching is deliberate.
 	if ves, ok := err.(*ValidationErrors); ok {
 		for _, ve := range ves.Errs {
 			// Handle each inner error through AddError logic recursively.
@@ -149,10 +161,11 @@ func AddError(perr *error, err error, loc string) {
 
 	// The new error is not a validation error.
 
+	//nolint:errorlint // Validation errors are aggregated, not wrapped; direct type matching is deliberate.
 	if _, ok := (*perr).(*ValidationError); ok {
 		// Replace a validation error with a non-validation error.
 		*perr = err
-	} else if _, ok := (*perr).(*ValidationErrors); ok {
+	} else if _, ok := (*perr).(*ValidationErrors); ok { //nolint:errorlint // Validation errors are aggregated, not wrapped; direct type matching is deliberate.
 		*perr = err
 	} else if unwrap, ok := (*perr).(interface{ Unwrap() []error }); ok && len(unwrap.Unwrap()) > 0 {
 		*perr = errors.Join(append(unwrap.Unwrap(), err)...)
@@ -167,14 +180,14 @@ func AddError(perr *error, err error, loc string) {
 func AddValidationErrorStruct(perr *error, ve *ValidationError) {
 	if *perr == nil {
 		*perr = ve
-	} else if one, ok := (*perr).(*ValidationError); ok {
+	} else if one, ok := (*perr).(*ValidationError); ok { //nolint:errorlint // Validation errors are aggregated, not wrapped; direct type matching is deliberate.
 		*perr = &ValidationErrors{
 			Errs: []*ValidationError{
 				one,
 				ve,
 			},
 		}
-	} else if ves, ok := (*perr).(*ValidationErrors); ok {
+	} else if ves, ok := (*perr).(*ValidationErrors); ok { //nolint:errorlint // Validation errors are aggregated, not wrapped; direct type matching is deliberate.
 		ves.Errs = append(ves.Errs, ve)
 	}
 }

@@ -8,6 +8,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"go/format"
@@ -163,7 +164,7 @@ func readKeywords(name string) *keywordsData {
 
 	var ret keywordsData
 	if err := json.NewDecoder(f).Decode(&ret); err != nil {
-		if se, ok := err.(*json.SyntaxError); ok {
+		if se, ok := errors.AsType[*json.SyntaxError](err); ok {
 			fmt.Fprintf(os.Stderr, "%s: %d: %v\n", name, se.Offset, err)
 		} else {
 			fmt.Fprintf(os.Stderr, "%s: %v\n", name, err)
@@ -224,6 +225,7 @@ func writeOutput(buf *bytes.Buffer) {
 		fmt.Fprintf(os.Stderr, "%s", buf.Bytes())
 		os.Exit(1)
 	}
+	//nolint:gosec // Generated source files are world-readable by design.
 	if err := os.WriteFile(*output, formatted, 0o644); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

@@ -36,36 +36,36 @@ func DerefSchema(schemaID string, root *schema.Schema, pointer string) (*schema.
 				continue
 			}
 
-			switch part.Keyword.ArgType {
+			switch part.Keyword.ArgType { //nolint:exhaustive // The default case rejects the remaining, non-dereferenceable part types.
 			case schema.ArgTypeSchema:
 				s = part.Value.(schema.PartSchema).S
 
 			case schema.ArgTypeSchemas:
 				i++
 				if i >= len(toks) {
-					return nil, fmt.Errorf("when dereferencing pointer %q expected array index after %q", pointer, tok)
+					return nil, fmt.Errorf("%w: when dereferencing pointer %q expected array index after %q", schema.ErrInvalidSchema, pointer, tok)
 				}
 				tok = decodeToken(toks[i])
 				idx, err := strconv.Atoi(tok)
 				if err != nil {
-					return nil, fmt.Errorf("when dereferencing pointer %q got token %q, expected array index", pointer, tok)
+					return nil, fmt.Errorf("%w: when dereferencing pointer %q got token %q, expected array index", schema.ErrInvalidSchema, pointer, tok)
 				}
 				schemas := part.Value.(schema.PartSchemas)
 				if idx < 0 || idx >= len(schemas) {
-					return nil, fmt.Errorf("when dereferencing pointer %q array index %d out of range (length %d)", pointer, idx, len(schemas))
+					return nil, fmt.Errorf("%w: when dereferencing pointer %q array index %d out of range (length %d)", schema.ErrInvalidSchema, pointer, idx, len(schemas))
 				}
 				s = schemas[idx]
 
 			case schema.ArgTypeMapSchema:
 				i++
 				if i >= len(toks) {
-					return nil, fmt.Errorf("when dereferencing pointer %q expected map key after %q", pointer, tok)
+					return nil, fmt.Errorf("%w: when dereferencing pointer %q expected map key after %q", schema.ErrInvalidSchema, pointer, tok)
 				}
 				tok = decodeToken(toks[i])
 				m := part.Value.(schema.PartMapSchema)
 				ms, ok := m[tok]
 				if !ok {
-					return nil, fmt.Errorf("when dereferencing pointer %q map key %q not present", pointer, tok)
+					return nil, fmt.Errorf("%w: when dereferencing pointer %q map key %q not present", schema.ErrInvalidSchema, pointer, tok)
 				}
 				s = ms
 
@@ -76,15 +76,15 @@ func DerefSchema(schemaID string, root *schema.Schema, pointer string) (*schema.
 				} else {
 					i++
 					if i >= len(toks) {
-						return nil, fmt.Errorf("when dereferencing pointer %q expected array index after %q", pointer, tok)
+						return nil, fmt.Errorf("%w: when dereferencing pointer %q expected array index after %q", schema.ErrInvalidSchema, pointer, tok)
 					}
 					tok = decodeToken(toks[i])
 					idx, err := strconv.Atoi(tok)
 					if err != nil {
-						return nil, fmt.Errorf("when dereferencing pointer %q got token %q, expected array index", pointer, tok)
+						return nil, fmt.Errorf("%w: when dereferencing pointer %q got token %q, expected array index", schema.ErrInvalidSchema, pointer, tok)
 					}
 					if idx < 0 || idx >= len(pv.Schemas) {
-						return nil, fmt.Errorf("when dereferencing pointer %q array index %d out of range (length %d)", pointer, idx, len(pv.Schemas))
+						return nil, fmt.Errorf("%w: when dereferencing pointer %q array index %d out of range (length %d)", schema.ErrInvalidSchema, pointer, idx, len(pv.Schemas))
 					}
 					s = pv.Schemas[idx]
 				}
@@ -92,16 +92,16 @@ func DerefSchema(schemaID string, root *schema.Schema, pointer string) (*schema.
 			case schema.ArgTypeMapArrayOrSchema:
 				i++
 				if i >= len(toks) {
-					return nil, fmt.Errorf("when dereferencing pointer %q expected map key after %q", pointer, tok)
+					return nil, fmt.Errorf("%w: when dereferencing pointer %q expected map key after %q", schema.ErrInvalidSchema, pointer, tok)
 				}
 				tok = decodeToken(toks[i])
 				m := part.Value.(schema.PartMapArrayOrSchema)
 				mv, ok := m[tok]
 				if !ok {
-					return nil, fmt.Errorf("when dereferencing pointer %q map key %q not present", pointer, tok)
+					return nil, fmt.Errorf("%w: when dereferencing pointer %q map key %q not present", schema.ErrInvalidSchema, pointer, tok)
 				}
 				if mv.Schema == nil {
-					return nil, fmt.Errorf("when dereferencing pointer %q map key %q is not a schema", pointer, tok)
+					return nil, fmt.Errorf("%w: when dereferencing pointer %q map key %q is not a schema", schema.ErrInvalidSchema, pointer, tok)
 				}
 				s = mv.Schema
 
@@ -114,39 +114,39 @@ func DerefSchema(schemaID string, root *schema.Schema, pointer string) (*schema.
 						var err error
 						s, err = schema.SchemaFromJSON(schemaID, nil, v)
 						if err != nil {
-							return nil, fmt.Errorf("when dereferencing pointer %q failed to resolve unrecognized schema: %v", pointer, err)
+							return nil, fmt.Errorf("%w: when dereferencing pointer %q failed to resolve unrecognized schema: %w", schema.ErrInvalidSchema, pointer, err)
 						}
 						break resolveLoop
 
 					case []any:
 						i++
 						if i >= len(toks) {
-							return nil, fmt.Errorf("when dereferencing pointer %q expected array index after %q", pointer, tok)
+							return nil, fmt.Errorf("%w: when dereferencing pointer %q expected array index after %q", schema.ErrInvalidSchema, pointer, tok)
 						}
 						tok = decodeToken(toks[i])
 						idx, err := strconv.Atoi(tok)
 						if err != nil {
-							return nil, fmt.Errorf("when dereferencing pointer %q for token %q, expected array index", pointer, tok)
+							return nil, fmt.Errorf("%w: when dereferencing pointer %q for token %q, expected array index", schema.ErrInvalidSchema, pointer, tok)
 						}
 						if idx < 0 || idx >= len(v) {
-							return nil, fmt.Errorf("when dereferencing pointer %q array index %d out of range (length %d)", pointer, idx, len(v))
+							return nil, fmt.Errorf("%w: when dereferencing pointer %q array index %d out of range (length %d)", schema.ErrInvalidSchema, pointer, idx, len(v))
 						}
 						pv = v[idx]
 
 					default:
-						return nil, fmt.Errorf("when dereferencing pointer %q unexpected type %T", pointer, v)
+						return nil, fmt.Errorf("%w: when dereferencing pointer %q unexpected type %T", schema.ErrInvalidSchema, pointer, v)
 					}
 				}
 
 			default:
-				return nil, fmt.Errorf("when dereferencing pointer %q unexpected part type %s", pointer, argtype.Name(part.Keyword.ArgType))
+				return nil, fmt.Errorf("%w: when dereferencing pointer %q unexpected part type %s", schema.ErrInvalidSchema, pointer, argtype.Name(part.Keyword.ArgType))
 			}
 
 			found = true
 			break
 		}
 		if !found {
-			return nil, fmt.Errorf("when dereferencing pointer %q no schema element %q", pointer, tok)
+			return nil, fmt.Errorf("%w: when dereferencing pointer %q no schema element %q", schema.ErrInvalidSchema, pointer, tok)
 		}
 	}
 

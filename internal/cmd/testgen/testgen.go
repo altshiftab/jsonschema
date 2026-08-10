@@ -11,6 +11,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/fs"
 	"log"
@@ -27,7 +28,7 @@ func main() {
 	}
 
 	const repo = "https://github.com/json-schema-org/JSON-Schema-Test-Suite"
-	cmd := exec.Command("git", "clone", "--depth", "1", repo)
+	cmd := exec.CommandContext(context.Background(), "git", "clone", "--depth", "1", repo)
 	cmd.Dir = tempDir
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -103,6 +104,7 @@ func copyDir(fromDir, toDir string) {
 
 		fmt.Printf("updating %s\n", path)
 
+		//nolint:gosec // Vendored suite files are world-readable by design.
 		if err := os.WriteFile(newPath, newContents, 0o644); err != nil {
 			log.Fatal(err)
 		}
@@ -143,6 +145,7 @@ func copyFile(fromFile, toFile string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	//nolint:gosec // Vendored suite files are world-readable by design.
 	if err := os.WriteFile(toFile, data, 0o644); err != nil {
 		log.Fatal(err)
 	}
@@ -150,6 +153,7 @@ func copyFile(fromFile, toFile string) {
 
 // writeREADME writes our local README file.
 func writeREADME(to string) {
+	//nolint:gosec // Vendored suite files are world-readable by design.
 	if err := os.WriteFile(to, []byte(readme), 0o644); err != nil {
 		log.Fatal(err)
 	}
