@@ -4,6 +4,8 @@
 
 // testgen downloads the current testsuite from json-schema-org
 // and updates the tests in the tree.
+// Only the parts of the suite that this module uses are synced:
+// the draft2020-12 tests and the remote schemas they reference.
 // This is normally invoked by "go generate" in the internal/tests directory.
 package main
 
@@ -25,7 +27,7 @@ func main() {
 	}
 
 	const repo = "https://github.com/json-schema-org/JSON-Schema-Test-Suite"
-	cmd := exec.Command("git", "clone", repo)
+	cmd := exec.Command("git", "clone", "--depth", "1", repo)
 	cmd.Dir = tempDir
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -36,9 +38,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	for _, dir := range []string{"output-tests", "remotes", "tests"} {
-		copyDir(filepath.Join(tempDir, "JSON-Schema-Test-Suite", dir), dir)
-		copyFile(filepath.Join(tempDir, "JSON-Schema-Test-Suite", "LICENSE"), filepath.Join(dir, "LICENSE"))
+	suiteDir := filepath.Join(tempDir, "JSON-Schema-Test-Suite")
+	for _, dir := range []string{"remotes", filepath.Join("tests", "draft2020-12")} {
+		copyDir(filepath.Join(suiteDir, dir), dir)
+		copyFile(filepath.Join(suiteDir, "LICENSE"), filepath.Join(dir, "LICENSE"))
 		writeREADME(filepath.Join(dir, "README"))
 	}
 }

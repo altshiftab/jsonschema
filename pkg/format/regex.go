@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"regexp/syntax"
 
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 // regexFormat requires a valid regex.

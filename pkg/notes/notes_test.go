@@ -23,15 +23,16 @@ func checkGet(t *testing.T, n *Notes, key string, want any) {
 }
 
 func TestNotes(t *testing.T) {
+	t.Parallel()
 	var n Notes
 	checkGet(t, &n, "key1", nil)
 	if !n.IsEmpty() {
-		t.Error("n.IsEmpty() == true, want false")
+		t.Error("n.IsEmpty() == false, want true")
 	}
 	n.Set("key1", "val1")
 	checkGet(t, &n, "key1", "val1")
 	if n.IsEmpty() {
-		t.Error("n.IsEmpty() == false, want true")
+		t.Error("n.IsEmpty() == true, want false")
 	}
 
 	AppendNote(&n, "key2", "a")
@@ -45,18 +46,19 @@ func TestNotes(t *testing.T) {
 }
 
 func TestAddNotes(t *testing.T) {
+	t.Parallel()
 	var n Notes
 	n.Set("key1", "val1")
 	n.Set("key2", "val2")
 	AppendNote(&n, "key3", 1)
 
 	var n2 Notes
-	n.Set("key1", "val11")
-	n.Set("key4", "val4")
+	n2.Set("key1", "val11")
+	n2.Set("key4", "val4")
 	AppendNote(&n2, "key3", 2, 10)
 
 	var n3 Notes
-	n.Set("key5", "val5")
+	n3.Set("key5", "val5")
 	AppendNote(&n3, "key3", 3)
 
 	n.AddNotes(n2, n3)
@@ -70,11 +72,12 @@ func TestAddNotes(t *testing.T) {
 }
 
 func TestClear(t *testing.T) {
+	t.Parallel()
 	var n Notes
 	n.Set("key1", "val1")
 	n.Clear()
 	checkGet(t, &n, "key1", nil)
 	if !n.IsEmpty() {
-		t.Error("n.IsEmpty() == true, want false")
+		t.Error("n.IsEmpty() == false, want true")
 	}
 }

@@ -9,7 +9,7 @@ import (
 	"net/url"
 
 	"github.com/altshiftab/jsonschema/internal/metaschema"
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 //go:embed metaschema/*.json metaschema/*/*.json

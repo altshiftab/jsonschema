@@ -10,7 +10,7 @@ package format
 
 import (
 	"github.com/altshiftab/jsonschema/internal/validator"
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 // init registers the defined formats.

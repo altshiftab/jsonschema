@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 // jsonPointerFormat requires a valid JSON pointer.

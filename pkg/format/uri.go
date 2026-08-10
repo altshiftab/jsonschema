@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 // uriOrIRI is an enum

@@ -10,16 +10,17 @@ import (
 	"net/url"
 	"strings"
 
+	motmedelErrors "github.com/Motmedel/utils_go/pkg/errors"
 	"github.com/altshiftab/jsonschema/internal/schemacache"
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
-// metaCacahe is a cache of the meta-schemas.
+// metaCache is a cache of the meta-schemas.
 // We use a single cache since they shouldn't change.
 var metaCache schemacache.ConcurrentCache
 
 // Load checks whether uri refers to a meta-schema in metaFS,
-// and loads it if it does. If usr is not a meta-schema,
+// and loads it if it does. If uri is not a meta-schema,
 // this returns nil, nil. metaFS is for schemaID,
 // and prefix is the filename prefix.
 func Load(schemaID, prefix string, metaFS *embed.FS, uri *url.URL, ropts *schema.ResolveOpts) (*schema.Schema, error) {
@@ -40,12 +41,12 @@ func Load(schemaID, prefix string, metaFS *embed.FS, uri *url.URL, ropts *schema
 
 	data, err := metaFS.ReadFile("metaschema/" + path + ".json")
 	if err != nil {
-		return nil, fmt.Errorf("can't find meta-schema URI %q: %v", uri, err)
+		return nil, motmedelErrors.NewWithTrace(fmt.Errorf("can't find meta-schema URI %q: %w", uri, err), path)
 	}
 
 	var s schema.Schema
 	if err := s.UnmarshalJSON(data); err != nil {
-		return nil, fmt.Errorf("can't parse meta-schema URI %q: %v", uri, err)
+		return nil, motmedelErrors.New(fmt.Errorf("can't parse meta-schema URI %q: %w", uri, err), path)
 	}
 
 	r := metaCache.Store(schemaID, path, &s)

@@ -6,11 +6,27 @@ package format
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
+
+// atoiDigits converts a string of ASCII digits to an int.
+// Unlike strconv.Atoi it does not permit a leading sign.
+func atoiDigits(s string) (int, bool) {
+	if len(s) == 0 {
+		return 0, false
+	}
+	n := 0
+	for i := range len(s) {
+		c := s[i]
+		if c < '0' || c > '9' {
+			return 0, false
+		}
+		n = n*10 + int(c-'0')
+	}
+	return n, true
+}
 
 // dateTimeFormat requires a valid date/time.
 func dateTimeFormat(instance any, state *schema.ValidationState) error {
@@ -70,16 +86,16 @@ func isValidDate(s string) bool {
 		return false
 	}
 
-	year, err := strconv.Atoi(s[:4])
-	if err != nil {
+	year, ok := atoiDigits(s[:4])
+	if !ok {
 		return false
 	}
-	month, err := strconv.Atoi(s[5:7])
-	if err != nil {
+	month, ok := atoiDigits(s[5:7])
+	if !ok {
 		return false
 	}
-	mday, err := strconv.Atoi(s[8:])
-	if err != nil {
+	mday, ok := atoiDigits(s[8:])
+	if !ok {
 		return false
 	}
 
@@ -125,27 +141,28 @@ func isValidTime(s string) bool {
 		return false
 	}
 
-	hour, err := strconv.Atoi(s[:2])
-	if err != nil {
+	hour, ok := atoiDigits(s[:2])
+	if !ok {
 		return false
 	}
-	minute, err := strconv.Atoi(s[3:5])
-	if err != nil {
+	minute, ok := atoiDigits(s[3:5])
+	if !ok {
 		return false
 	}
-	second, err := strconv.Atoi(s[6:8])
-	if err != nil {
+	second, ok := atoiDigits(s[6:8])
+	if !ok {
 		return false
 	}
 
-	if hour < 0 || hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 60 {
+	if hour > 23 || minute > 59 || second > 60 {
 		return false
 	}
 
 	s = s[8:]
 	if len(s) > 0 && s[0] == '.' {
 		s = s[1:]
-		if len(s) == 0 {
+		// At least one fraction digit is required.
+		if len(s) == 0 || s[0] < '0' || s[0] > '9' {
 			return false
 		}
 		for len(s) > 0 && s[0] >= '0' && s[0] <= '9' {
@@ -178,15 +195,15 @@ func isValidTime(s string) bool {
 	if s[2] != ':' {
 		return false
 	}
-	hourOffset, err := strconv.Atoi(s[:2])
-	if err != nil {
+	hourOffset, ok := atoiDigits(s[:2])
+	if !ok {
 		return false
 	}
-	minuteOffset, err := strconv.Atoi(s[3:])
-	if err != nil {
+	minuteOffset, ok := atoiDigits(s[3:])
+	if !ok {
 		return false
 	}
-	if hourOffset < 0 || hourOffset > 23 || minuteOffset < 0 || minuteOffset > 59 {
+	if hourOffset > 23 || minuteOffset > 59 {
 		return false
 	}
 
@@ -290,7 +307,8 @@ func isValidDuration(s string) bool {
 				return false
 			}
 		}
-		return isChar(s, 'S', 's')
+		// The seconds designator must end the duration.
+		return len(s) == 1 && isChar(s, 'S', 's')
 	}
 
 	// dur-day   = 1*DIGIT "D"
@@ -304,11 +322,9 @@ func isValidDuration(s string) bool {
 			return false
 		}
 		if isChar(s, 'W', 'w') {
-			s = s[1:]
-			if len(s) == 0 {
-				return true
-			}
-			return validDurTime(s)
+			// A week duration cannot be combined with
+			// a time component.
+			return len(s) == 1
 		}
 		if isChar(s, 'Y', 'y') {
 			s = s[1:]

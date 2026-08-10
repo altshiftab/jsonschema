@@ -10,8 +10,7 @@ import (
 	"cmp"
 
 	"github.com/altshiftab/jsonschema/internal/validator"
-	"github.com/altshiftab/jsonschema/pkg/types/arg_type"
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 var _ = validator.ValidateTrue // avoid warning if we don't use validator below
@@ -19,56 +18,56 @@ var _ = validator.ValidateTrue // avoid warning if we don't use validator below
 var (
 	vocabularyKeyword = schema.Keyword{
 		Name:      "$vocabulary",
-		ArgType:   arg_type.ArgTypeAny,
+		ArgType:   schema.ArgTypeAny,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
 	idKeyword = schema.Keyword{
 		Name:      "$id",
-		ArgType:   arg_type.ArgTypeString,
+		ArgType:   schema.ArgTypeString,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
 	anchorKeyword = schema.Keyword{
 		Name:      "$anchor",
-		ArgType:   arg_type.ArgTypeString,
+		ArgType:   schema.ArgTypeString,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
 	dynamicAnchorKeyword = schema.Keyword{
 		Name:      "$dynamicAnchor",
-		ArgType:   arg_type.ArgTypeString,
+		ArgType:   schema.ArgTypeString,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
 	refKeyword = schema.Keyword{
 		Name:      "$ref",
-		ArgType:   arg_type.ArgTypeString,
+		ArgType:   schema.ArgTypeString,
 		Validate:  validator.ArgTypeString(validateRef),
 		Generated: false,
 	}
 
 	dynamicRefKeyword = schema.Keyword{
 		Name:      "$dynamicRef",
-		ArgType:   arg_type.ArgTypeString,
+		ArgType:   schema.ArgTypeString,
 		Validate:  validator.ArgTypeString(validateDynamicRef),
 		Generated: false,
 	}
 
 	defsKeyword = schema.Keyword{
 		Name:      "$defs",
-		ArgType:   arg_type.ArgTypeMapSchema,
+		ArgType:   schema.ArgTypeMapSchema,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
 	commentKeyword = schema.Keyword{
 		Name:      "$comment",
-		ArgType:   arg_type.ArgTypeString,
+		ArgType:   schema.ArgTypeString,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
@@ -77,343 +76,343 @@ var (
 var (
 	allOfKeyword = schema.Keyword{
 		Name:      "allOf",
-		ArgType:   arg_type.ArgTypeSchemas,
+		ArgType:   schema.ArgTypeSchemas,
 		Validate:  validator.ArgTypeSchemas(validator.ValidateAllOf),
 		Generated: false,
 	}
 
 	anyOfKeyword = schema.Keyword{
 		Name:      "anyOf",
-		ArgType:   arg_type.ArgTypeSchemas,
+		ArgType:   schema.ArgTypeSchemas,
 		Validate:  validator.ArgTypeSchemas(validator.ValidateAnyOf),
 		Generated: false,
 	}
 
 	oneOfKeyword = schema.Keyword{
 		Name:      "oneOf",
-		ArgType:   arg_type.ArgTypeSchemas,
+		ArgType:   schema.ArgTypeSchemas,
 		Validate:  validator.ArgTypeSchemas(validator.ValidateOneOf),
 		Generated: false,
 	}
 
 	notKeyword = schema.Keyword{
 		Name:      "not",
-		ArgType:   arg_type.ArgTypeSchema,
+		ArgType:   schema.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidateNot),
 		Generated: false,
 	}
 
 	ifKeyword = schema.Keyword{
 		Name:      "if",
-		ArgType:   arg_type.ArgTypeSchema,
+		ArgType:   schema.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidateIf),
 		Generated: false,
 	}
 
 	thenKeyword = schema.Keyword{
 		Name:      "then",
-		ArgType:   arg_type.ArgTypeSchema,
+		ArgType:   schema.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidateThen),
 		Generated: false,
 	}
 
 	elseKeyword = schema.Keyword{
 		Name:      "else",
-		ArgType:   arg_type.ArgTypeSchema,
+		ArgType:   schema.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidateElse),
 		Generated: false,
 	}
 
 	dependentSchemasKeyword = schema.Keyword{
 		Name:      "dependentSchemas",
-		ArgType:   arg_type.ArgTypeMapSchema,
+		ArgType:   schema.ArgTypeMapSchema,
 		Validate:  validator.ArgTypeMapSchema(validator.ValidateDependentSchemas),
 		Generated: false,
 	}
 
 	prefixItemsKeyword = schema.Keyword{
 		Name:      "prefixItems",
-		ArgType:   arg_type.ArgTypeSchemas,
+		ArgType:   schema.ArgTypeSchemas,
 		Validate:  validator.ArgTypeSchemas(validator.ValidatePrefixItems),
 		Generated: false,
 	}
 
 	itemsKeyword = schema.Keyword{
 		Name:      "items",
-		ArgType:   arg_type.ArgTypeSchema,
+		ArgType:   schema.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidateItems),
 		Generated: false,
 	}
 
 	containsKeyword = schema.Keyword{
 		Name:      "contains",
-		ArgType:   arg_type.ArgTypeSchema,
+		ArgType:   schema.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidateContains),
 		Generated: false,
 	}
 
 	propertiesKeyword = schema.Keyword{
 		Name:      "properties",
-		ArgType:   arg_type.ArgTypeMapSchema,
+		ArgType:   schema.ArgTypeMapSchema,
 		Validate:  validator.ArgTypeMapSchema(validator.ValidateProperties),
 		Generated: false,
 	}
 
 	patternPropertiesKeyword = schema.Keyword{
 		Name:      "patternProperties",
-		ArgType:   arg_type.ArgTypeMapSchema,
+		ArgType:   schema.ArgTypeMapSchema,
 		Validate:  validator.ArgTypeMapSchema(validator.ValidatePatternProperties),
 		Generated: false,
 	}
 
 	additionalPropertiesKeyword = schema.Keyword{
 		Name:      "additionalProperties",
-		ArgType:   arg_type.ArgTypeSchema,
+		ArgType:   schema.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidateAdditionalProperties),
 		Generated: false,
 	}
 
 	propertyNamesKeyword = schema.Keyword{
 		Name:      "propertyNames",
-		ArgType:   arg_type.ArgTypeSchema,
+		ArgType:   schema.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidatePropertyNames),
 		Generated: false,
 	}
 
 	unevaluatedItemsKeyword = schema.Keyword{
 		Name:      "unevaluatedItems",
-		ArgType:   arg_type.ArgTypeSchema,
+		ArgType:   schema.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidateUnevaluatedItems),
 		Generated: false,
 	}
 
 	unevaluatedPropertiesKeyword = schema.Keyword{
 		Name:      "unevaluatedProperties",
-		ArgType:   arg_type.ArgTypeSchema,
+		ArgType:   schema.ArgTypeSchema,
 		Validate:  validator.ArgTypeSchema(validator.ValidateUnevaluatedProperties),
 		Generated: false,
 	}
 
 	typeKeyword = schema.Keyword{
 		Name:      "type",
-		ArgType:   arg_type.ArgTypeStringOrStrings,
+		ArgType:   schema.ArgTypeStringOrStrings,
 		Validate:  validator.ArgTypeStringOrStrings(validator.ValidateType),
 		Generated: false,
 	}
 
 	enumKeyword = schema.Keyword{
 		Name:      "enum",
-		ArgType:   arg_type.ArgTypeAny,
+		ArgType:   schema.ArgTypeAny,
 		Validate:  validator.ArgTypeAny(validator.ValidateEnum),
 		Generated: false,
 	}
 
 	constKeyword = schema.Keyword{
 		Name:      "const",
-		ArgType:   arg_type.ArgTypeAny,
+		ArgType:   schema.ArgTypeAny,
 		Validate:  validator.ArgTypeAny(validator.ValidateConst),
 		Generated: false,
 	}
 
 	multipleOfKeyword = schema.Keyword{
 		Name:      "multipleOf",
-		ArgType:   arg_type.ArgTypeFloat,
+		ArgType:   schema.ArgTypeFloat,
 		Validate:  validator.ArgTypeFloat(validator.ValidateMultipleOf),
 		Generated: false,
 	}
 
 	maximumKeyword = schema.Keyword{
 		Name:      "maximum",
-		ArgType:   arg_type.ArgTypeFloat,
+		ArgType:   schema.ArgTypeFloat,
 		Validate:  validator.ArgTypeFloat(validator.ValidateMaximum),
 		Generated: false,
 	}
 
 	exclusiveMaximumKeyword = schema.Keyword{
 		Name:      "exclusiveMaximum",
-		ArgType:   arg_type.ArgTypeFloat,
+		ArgType:   schema.ArgTypeFloat,
 		Validate:  validator.ArgTypeFloat(validator.ValidateExclusiveMaximum),
 		Generated: false,
 	}
 
 	minimumKeyword = schema.Keyword{
 		Name:      "minimum",
-		ArgType:   arg_type.ArgTypeFloat,
+		ArgType:   schema.ArgTypeFloat,
 		Validate:  validator.ArgTypeFloat(validator.ValidateMinimum),
 		Generated: false,
 	}
 
 	exclusiveMinimumKeyword = schema.Keyword{
 		Name:      "exclusiveMinimum",
-		ArgType:   arg_type.ArgTypeFloat,
+		ArgType:   schema.ArgTypeFloat,
 		Validate:  validator.ArgTypeFloat(validator.ValidateExclusiveMinimum),
 		Generated: false,
 	}
 
 	maxLengthKeyword = schema.Keyword{
 		Name:      "maxLength",
-		ArgType:   arg_type.ArgTypeInt,
+		ArgType:   schema.ArgTypeInt,
 		Validate:  validator.ArgTypeInt(validator.ValidateMaxLength),
 		Generated: false,
 	}
 
 	minLengthKeyword = schema.Keyword{
 		Name:      "minLength",
-		ArgType:   arg_type.ArgTypeInt,
+		ArgType:   schema.ArgTypeInt,
 		Validate:  validator.ArgTypeInt(validator.ValidateMinLength),
 		Generated: false,
 	}
 
 	patternKeyword = schema.Keyword{
 		Name:      "pattern",
-		ArgType:   arg_type.ArgTypeString,
+		ArgType:   schema.ArgTypeString,
 		Validate:  validator.ArgTypeString(validator.ValidatePattern),
 		Generated: false,
 	}
 
 	maxItemsKeyword = schema.Keyword{
 		Name:      "maxItems",
-		ArgType:   arg_type.ArgTypeInt,
+		ArgType:   schema.ArgTypeInt,
 		Validate:  validator.ArgTypeInt(validator.ValidateMaxItems),
 		Generated: false,
 	}
 
 	minItemsKeyword = schema.Keyword{
 		Name:      "minItems",
-		ArgType:   arg_type.ArgTypeInt,
+		ArgType:   schema.ArgTypeInt,
 		Validate:  validator.ArgTypeInt(validator.ValidateMinItems),
 		Generated: false,
 	}
 
 	uniqueItemsKeyword = schema.Keyword{
 		Name:      "uniqueItems",
-		ArgType:   arg_type.ArgTypeBool,
+		ArgType:   schema.ArgTypeBool,
 		Validate:  validator.ArgTypeBool(validator.ValidateUniqueItems),
 		Generated: false,
 	}
 
 	maxContainsKeyword = schema.Keyword{
 		Name:      "maxContains",
-		ArgType:   arg_type.ArgTypeInt,
+		ArgType:   schema.ArgTypeInt,
 		Validate:  validator.ArgTypeInt(validator.ValidateMaxContains),
 		Generated: false,
 	}
 
 	minContainsKeyword = schema.Keyword{
 		Name:      "minContains",
-		ArgType:   arg_type.ArgTypeInt,
+		ArgType:   schema.ArgTypeInt,
 		Validate:  validator.ArgTypeInt(validator.ValidateMinContains),
 		Generated: false,
 	}
 
 	maxPropertiesKeyword = schema.Keyword{
 		Name:      "maxProperties",
-		ArgType:   arg_type.ArgTypeInt,
+		ArgType:   schema.ArgTypeInt,
 		Validate:  validator.ArgTypeInt(validator.ValidateMaxProperties),
 		Generated: false,
 	}
 
 	minPropertiesKeyword = schema.Keyword{
 		Name:      "minProperties",
-		ArgType:   arg_type.ArgTypeInt,
+		ArgType:   schema.ArgTypeInt,
 		Validate:  validator.ArgTypeInt(validator.ValidateMinProperties),
 		Generated: false,
 	}
 
 	requiredKeyword = schema.Keyword{
 		Name:      "required",
-		ArgType:   arg_type.ArgTypeStrings,
+		ArgType:   schema.ArgTypeStrings,
 		Validate:  validator.ArgTypeStrings(validator.ValidateRequired),
 		Generated: false,
 	}
 
 	dependentRequiredKeyword = schema.Keyword{
 		Name:      "dependentRequired",
-		ArgType:   arg_type.ArgTypeAny,
+		ArgType:   schema.ArgTypeAny,
 		Validate:  validator.ArgTypeAny(validator.ValidateDependentRequired),
 		Generated: false,
 	}
 
 	formatKeyword = schema.Keyword{
 		Name:      "format",
-		ArgType:   arg_type.ArgTypeString,
+		ArgType:   schema.ArgTypeString,
 		Validate:  validator.ArgTypeString(validator.ValidateFormat),
 		Generated: false,
 	}
 
 	contentEncodingKeyword = schema.Keyword{
 		Name:      "contentEncoding",
-		ArgType:   arg_type.ArgTypeString,
+		ArgType:   schema.ArgTypeString,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
 	contentMediaTypeKeyword = schema.Keyword{
 		Name:      "contentMediaType",
-		ArgType:   arg_type.ArgTypeString,
+		ArgType:   schema.ArgTypeString,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
 	contentSchemaKeyword = schema.Keyword{
 		Name:      "contentSchema",
-		ArgType:   arg_type.ArgTypeSchema,
+		ArgType:   schema.ArgTypeSchema,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
 	titleKeyword = schema.Keyword{
 		Name:      "title",
-		ArgType:   arg_type.ArgTypeString,
+		ArgType:   schema.ArgTypeString,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
 	descriptionKeyword = schema.Keyword{
 		Name:      "description",
-		ArgType:   arg_type.ArgTypeString,
+		ArgType:   schema.ArgTypeString,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
 	defaultKeyword = schema.Keyword{
 		Name:      "default",
-		ArgType:   arg_type.ArgTypeAny,
+		ArgType:   schema.ArgTypeAny,
 		Validate:  validator.ArgTypeAny(validator.ValidateDefault),
 		Generated: false,
 	}
 
 	deprecatedKeyword = schema.Keyword{
 		Name:      "deprecated",
-		ArgType:   arg_type.ArgTypeBool,
+		ArgType:   schema.ArgTypeBool,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
 	readOnlyKeyword = schema.Keyword{
 		Name:      "readOnly",
-		ArgType:   arg_type.ArgTypeBool,
+		ArgType:   schema.ArgTypeBool,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
 	writeOnlyKeyword = schema.Keyword{
 		Name:      "writeOnly",
-		ArgType:   arg_type.ArgTypeBool,
+		ArgType:   schema.ArgTypeBool,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
 	examplesKeyword = schema.Keyword{
 		Name:      "examples",
-		ArgType:   arg_type.ArgTypeAny,
+		ArgType:   schema.ArgTypeAny,
 		Validate:  validator.ValidateTrue,
 		Generated: false,
 	}
 
 	dependenciesKeyword = schema.Keyword{
 		Name:      "dependencies",
-		ArgType:   arg_type.ArgTypeMapArrayOrSchema,
+		ArgType:   schema.ArgTypeMapArrayOrSchema,
 		Validate:  validator.ArgTypeMapArrayOrSchema(validator.ValidateDependencies),
 		Generated: false,
 	}

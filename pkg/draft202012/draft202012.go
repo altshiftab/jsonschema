@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:generate go run ../internal/cmd/keywordgen -p draft202012 -o keywords.go corekeywords.json applicatorkeywords.json
+//go:generate go run github.com/altshiftab/jsonschema/internal/cmd/keywordgen -p draft202012 -o keywords.go corekeywords.json applicatorkeywords.json
 
 // Package draft202012 defines the keywords used by
 // JSON schema version 2020-12.
 package draft202012
 
 import (
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 const SchemaID = "https://json-schema.org/draft/2020-12/schema"

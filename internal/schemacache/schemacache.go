@@ -9,7 +9,7 @@ package schemacache
 import (
 	"sync"
 
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 // Cache is a cache that holds schemas.
@@ -32,7 +32,7 @@ func (c *Cache) Load(schemaID, path string) *schema.Schema {
 	return c.m[cacheKey{schemaID, path}]
 }
 
-// Sort stores a schema in the cache.
+// Store stores a schema in the cache.
 // It returns the schema to use, which may differ
 // if it has already been cached.
 func (c *Cache) Store(schemaID, path string, s *schema.Schema) *schema.Schema {

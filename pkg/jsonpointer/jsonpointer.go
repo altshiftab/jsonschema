@@ -12,8 +12,7 @@ import (
 	"strings"
 
 	"github.com/altshiftab/jsonschema/internal/argtype"
-	"github.com/altshiftab/jsonschema/pkg/types/arg_type"
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 // DerefSchema takes a JSON pointer and a root schema and returns
@@ -21,10 +20,14 @@ import (
 // The schemaID parameter is the default schema ID.
 func DerefSchema(schemaID string, root *schema.Schema, pointer string) (*schema.Schema, error) {
 	s := root
+	if pointer == "" {
+		return s, nil
+	}
 	pointer = strings.TrimPrefix(pointer, "/")
 	toks := strings.Split(pointer, "/")
 	for i := 0; i < len(toks); i++ {
 		tok := decodeToken(toks[i])
+		found := false
 		for _, part := range s.Parts {
 			if part.Keyword.Generated {
 				continue
@@ -34,10 +37,10 @@ func DerefSchema(schemaID string, root *schema.Schema, pointer string) (*schema.
 			}
 
 			switch part.Keyword.ArgType {
-			case arg_type.ArgTypeSchema:
+			case schema.ArgTypeSchema:
 				s = part.Value.(schema.PartSchema).S
 
-			case arg_type.ArgTypeSchemas:
+			case schema.ArgTypeSchemas:
 				i++
 				if i >= len(toks) {
 					return nil, fmt.Errorf("when dereferencing pointer %q expected array index after %q", pointer, tok)
@@ -53,7 +56,7 @@ func DerefSchema(schemaID string, root *schema.Schema, pointer string) (*schema.
 				}
 				s = schemas[idx]
 
-			case arg_type.ArgTypeMapSchema:
+			case schema.ArgTypeMapSchema:
 				i++
 				if i >= len(toks) {
 					return nil, fmt.Errorf("when dereferencing pointer %q expected map key after %q", pointer, tok)
@@ -66,7 +69,7 @@ func DerefSchema(schemaID string, root *schema.Schema, pointer string) (*schema.
 				}
 				s = ms
 
-			case arg_type.ArgTypeSchemaOrSchemas:
+			case schema.ArgTypeSchemaOrSchemas:
 				pv := part.Value.(schema.PartSchemaOrSchemas)
 				if pv.Schema != nil {
 					s = pv.Schema
@@ -86,7 +89,7 @@ func DerefSchema(schemaID string, root *schema.Schema, pointer string) (*schema.
 					s = pv.Schemas[idx]
 				}
 
-			case arg_type.ArgTypeMapArrayOrSchema:
+			case schema.ArgTypeMapArrayOrSchema:
 				i++
 				if i >= len(toks) {
 					return nil, fmt.Errorf("when dereferencing pointer %q expected map key after %q", pointer, tok)
@@ -102,7 +105,7 @@ func DerefSchema(schemaID string, root *schema.Schema, pointer string) (*schema.
 				}
 				s = mv.Schema
 
-			case arg_type.ArgTypeAny:
+			case schema.ArgTypeAny:
 				pv := part.Value.(schema.PartAny).V
 			resolveLoop:
 				for {
@@ -139,7 +142,11 @@ func DerefSchema(schemaID string, root *schema.Schema, pointer string) (*schema.
 				return nil, fmt.Errorf("when dereferencing pointer %q unexpected part type %s", pointer, argtype.Name(part.Keyword.ArgType))
 			}
 
+			found = true
 			break
+		}
+		if !found {
+			return nil, fmt.Errorf("when dereferencing pointer %q no schema element %q", pointer, tok)
 		}
 	}
 

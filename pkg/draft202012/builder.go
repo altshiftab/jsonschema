@@ -10,10 +10,11 @@ import (
 	"reflect"
 	"strings"
 
+	motmedelErrors "github.com/Motmedel/utils_go/pkg/errors"
 	"github.com/altshiftab/jsonschema/internal/schemacache"
 	"github.com/altshiftab/jsonschema/pkg/builder"
 	"github.com/altshiftab/jsonschema/pkg/jsonpointer"
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 // Builder is a JSON schema builder.
@@ -95,6 +96,10 @@ type resolveState struct {
 	uris    map[string]*schema.Schema
 	anchors map[string]anchorData
 	cache   schemacache.Cache
+	// pendingAnchors maps a resource root to the dynamic anchors
+	// found within that resource, pending installation of the
+	// record and clear keywords.
+	pendingAnchors map[*schema.Schema][]*recordDynamicAnchor
 }
 
 // schemaData is information we keep for some schemas.
@@ -142,7 +147,72 @@ func resolveRefSchema(uri *url.URL, schema *schema.Schema, state *resolveState) 
 	if err := resolveIDs(schema, schema, state, subData); err != nil {
 		return err
 	}
+	installDynamicAnchors(state)
 	return resolveRefs(schema, state, subData)
+}
+
+// installDynamicAnchors adds the record and clear keywords for the
+// dynamic anchors collected by resolveIDs. Entering any schema of a
+// resource brings the resource's dynamic anchors into the dynamic
+// scope — a reference may enter a resource through a subschema,
+// skipping the resource root — so the keywords are installed on every
+// schema of the resource.
+func installDynamicAnchors(state *resolveState) {
+	for base, anchors := range state.pendingAnchors {
+		// A resource defines each dynamic anchor at most once;
+		// keep the first occurrence.
+		seen := make(map[string]bool)
+		kept := anchors[:0]
+		for _, anchor := range anchors {
+			if seen[anchor.anchor] {
+				continue
+			}
+			seen[anchor.anchor] = true
+			kept = append(kept, anchor)
+		}
+		installAnchorParts(base, kept, true)
+	}
+	state.pendingAnchors = nil
+}
+
+// installAnchorParts installs record and clear keyword pairs for
+// anchors on s and its subschemas, stopping at nested resources.
+// Each installation site gets its own record value, so that clearing
+// is limited to the site that actually registered the anchor.
+func installAnchorParts(s *schema.Schema, anchors []*recordDynamicAnchor, isResourceRoot bool) {
+	if s == nil {
+		return
+	}
+	if !isResourceRoot {
+		if _, ok := s.LookupKeyword("$id"); ok {
+			// A nested resource; its own anchors are
+			// installed separately.
+			return
+		}
+	}
+
+	for _, anchor := range anchors {
+		val := &recordDynamicAnchor{
+			anchor: anchor.anchor,
+			schema: anchor.schema,
+		}
+		s.Parts = append([]schema.Part{
+			{
+				Keyword: &recordDynamicAnchorKeyword,
+				Value:   schema.PartAny{V: val},
+			},
+		}, s.Parts...)
+		s.Parts = append(s.Parts,
+			schema.Part{
+				Keyword: &clearDynamicAnchorKeyword,
+				Value:   schema.PartAny{V: val},
+			},
+		)
+	}
+
+	for _, sub := range s.Children() {
+		installAnchorParts(sub, anchors, false)
+	}
 }
 
 // resolveIDs finds the IDs and anchors in a schema.
@@ -156,7 +226,7 @@ func resolveIDs(subSchema, base *schema.Schema, state *resolveState, subData sub
 		var err error
 		switch part.Keyword.Name {
 		case "$id":
-			err, subData = resolveID(subSchema, part.Value, state, subData)
+			subData, err = resolveID(subSchema, part.Value, state, subData)
 			base = subSchema
 		case "$anchor":
 			_, err = resolveAnchor(subSchema, false, part.Value, state, subData)
@@ -178,36 +248,17 @@ func resolveIDs(subSchema, base *schema.Schema, state *resolveState, subData sub
 	}
 
 	if dynamicAnchor != "" {
-		// Add special keywords to set and clear the dynamic
-		// anchor during validation. These keywords need to be
-		// added to the root schema, but only if the root doesn't
-		// already have a dynamic anchor. This implements the
-		// dynamic scoping that resolves to the outermost anchor.
-
-		sawDynamicAnchor := false
-		for _, part := range base.Parts {
-			if part.Keyword == &recordDynamicAnchorKeyword {
-				sawDynamicAnchor = true
-				break
-			}
+		// Record the dynamic anchor for its resource.
+		// The record and clear keywords that implement the
+		// dynamic scoping are installed by installDynamicAnchors
+		// once all resources have been walked.
+		if state.pendingAnchors == nil {
+			state.pendingAnchors = make(map[*schema.Schema][]*recordDynamicAnchor)
 		}
-		if !sawDynamicAnchor {
-			val := &recordDynamicAnchor{
-				anchor: dynamicAnchor,
-				schema: subSchema,
-			}
-			recordDynamicAnchor := schema.Part{
-				Keyword: &recordDynamicAnchorKeyword,
-				Value:   schema.PartAny{val},
-			}
-			base.Parts = append([]schema.Part{recordDynamicAnchor}, base.Parts...)
-			base.Parts = append(base.Parts,
-				schema.Part{
-					Keyword: &clearDynamicAnchorKeyword,
-					Value:   schema.PartAny{val},
-				},
-			)
-		}
+		state.pendingAnchors[base] = append(state.pendingAnchors[base], &recordDynamicAnchor{
+			anchor: dynamicAnchor,
+			schema: subSchema,
+		})
 	}
 
 	for name, subsub := range subSchema.Children() {
@@ -224,14 +275,17 @@ func resolveIDs(subSchema, base *schema.Schema, state *resolveState, subData sub
 }
 
 // resolveID handles the $id keyword when searching for anchors.
-func resolveID(subSchema *schema.Schema, value schema.PartValue, state *resolveState, subData subInfo) (error, subInfo) {
+func resolveID(subSchema *schema.Schema, value schema.PartValue, state *resolveState, subData subInfo) (subInfo, error) {
 	arg := value.(schema.PartString)
 	uri, err := url.Parse(string(arg))
 	if err != nil {
-		return fmt.Errorf(`%s: failed to parse "$id" %q: %v`, subData.Name(), arg, err), subInfo{}
+		return subInfo{}, motmedelErrors.NewWithTrace(
+			fmt.Errorf(`%s: failed to parse "$id" %q: %w`, subData.Name(), arg, err),
+			string(arg),
+		)
 	}
 	if uri.Fragment != "" {
-		return fmt.Errorf(`%s: "$id" %q contains non-empty fragment`, subData.Name(), err), subInfo{}
+		return subInfo{}, fmt.Errorf(`%s: "$id" %q contains non-empty fragment`, subData.Name(), arg)
 	}
 	var newURI *url.URL
 	if uri.IsAbs() || subData.uri == nil {
@@ -249,7 +303,7 @@ func resolveID(subSchema *schema.Schema, value schema.PartValue, state *resolveS
 		uri:  newURI,
 		name: subData.name,
 	}
-	return nil, si
+	return si, nil
 }
 
 // resolveAnchor handles the $anchor and $dynamicAnchor keywords
@@ -272,7 +326,6 @@ func resolveAnchor(subSchema *schema.Schema, dynamic bool, value schema.PartValu
 	anchorStr := anchorURI.String()
 
 	if _, ok := state.anchors[anchorStr]; ok {
-		fmt.Printf("%v\n", subSchema)
 		return "", fmt.Errorf("%s: duplicate anchor %q", subData.Name(), anchorStr)
 	}
 	state.anchors[anchorStr] = anchorData{
@@ -328,7 +381,10 @@ func resolveRef(subSchema *schema.Schema, dynamic bool, value schema.PartValue, 
 	ref := string(value.(schema.PartString))
 	refURI, err := url.Parse(ref)
 	if err != nil {
-		return err
+		return motmedelErrors.NewWithTrace(
+			fmt.Errorf("%s: failed to parse reference %q: %w", subData.Name(), ref, err),
+			ref,
+		)
 	}
 
 	sd, ok := state.schemas[subSchema]
@@ -363,7 +419,7 @@ func resolveRef(subSchema *schema.Schema, dynamic bool, value schema.PartValue, 
 		subSchema.Parts = append(subSchema.Parts,
 			schema.Part{
 				Keyword: resolvedKey,
-				Value:   schema.PartSchema{refSchema},
+				Value:   schema.PartSchema{S: refSchema},
 			},
 		)
 	}
@@ -454,7 +510,10 @@ func resolveURI(refURI *url.URL, state *resolveState, subData subInfo) (*schema.
 	// Load the schema remotely.
 	refSchema, err = state.ropts.Loader(SchemaID, noFragURI)
 	if err != nil {
-		return nil, fmt.Errorf("%s: loading of URI %q failed: %v", subData.Name(), noFragURI, err)
+		return nil, motmedelErrors.NewWithTrace(
+			fmt.Errorf("%s: loading of URI %q failed: %w", subData.Name(), noFragURI, err),
+			noFragStr,
+		)
 	}
 	if refSchema == nil {
 		return nil, fmt.Errorf("%s: loading of URI %q returned no schema and no error", subData.Name(), noFragURI)

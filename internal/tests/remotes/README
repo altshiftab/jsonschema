@@ -1,0 +1,8 @@
+The contents of this directory are copied from
+https://github.com/json-schema-org/JSON-Schema-Test-Suite.
+
+The files in this directory are covered by the LICENSE file
+in this directory. These files are only used for testing,
+and the LICENSE only applies to explicit copies of these files.
+Packages that import the jsonschema packages will not import
+these files, and will not be subject to this LICENSE.

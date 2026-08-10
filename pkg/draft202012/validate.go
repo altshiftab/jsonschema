@@ -9,16 +9,16 @@ import (
 	"net/url"
 	"strings"
 
+	motmedelErrors "github.com/Motmedel/utils_go/pkg/errors"
 	"github.com/altshiftab/jsonschema/internal/validator"
-	"github.com/altshiftab/jsonschema/pkg/types/arg_type"
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 // resolvedRefKeyword is a special Keyword used to record what a
 // $ref keyword refers to in a schema.
 var resolvedRefKeyword = schema.Keyword{
 	Name:      "$$resolvedRef",
-	ArgType:   arg_type.ArgTypeSchema,
+	ArgType:   schema.ArgTypeSchema,
 	Validate:  validator.ValidateTrue,
 	Generated: true,
 }
@@ -27,7 +27,7 @@ var resolvedRefKeyword = schema.Keyword{
 // what a $dynamicRef refers to in a schema.
 var resolvedDynamicRefKeyword = schema.Keyword{
 	Name:      "$$resolvedDynamicRef",
-	ArgType:   arg_type.ArgTypeSchema,
+	ArgType:   schema.ArgTypeSchema,
 	Validate:  validator.ValidateTrue,
 	Generated: true,
 }
@@ -39,7 +39,7 @@ var resolvedDynamicRefKeyword = schema.Keyword{
 // that records the dynamic anchor.
 var detachedDynamicRefKeyword = schema.Keyword{
 	Name:      "$$detachedDynamicRef",
-	ArgType:   arg_type.ArgTypeSchema,
+	ArgType:   schema.ArgTypeSchema,
 	Validate:  validator.ValidateTrue,
 	Generated: true,
 }
@@ -55,7 +55,7 @@ type recordDynamicAnchor struct {
 // $dynamicAnchor. The string is the name of the $dynamicAnchor.
 var recordDynamicAnchorKeyword = schema.Keyword{
 	Name:      "$$recordDynamicAnchorKeyword",
-	ArgType:   arg_type.ArgTypeString,
+	ArgType:   schema.ArgTypeString,
 	Validate:  validator.ArgTypeAny(validateRecordDynamicAnchor),
 	Generated: true,
 }
@@ -64,7 +64,7 @@ var recordDynamicAnchorKeyword = schema.Keyword{
 // $dynamicAnchor stored during validation.
 var clearDynamicAnchorKeyword = schema.Keyword{
 	Name:      "$$clearDynamicAnchorKeyword",
-	ArgType:   arg_type.ArgTypeString,
+	ArgType:   schema.ArgTypeString,
 	Validate:  validator.ArgTypeAny(validateClearDynamicAnchor),
 	Generated: true,
 }
@@ -120,39 +120,45 @@ func validateDynamicRef(arg schema.PartString, instance any, state *schema.Valid
 // validationData is data specific to the draft used for validation.
 // We record the current dynamic anchors.
 type validationData struct {
-	dynamicAnchors map[string]*schema.Schema
+	// dynamicAnchors maps an anchor name to the record keyword value
+	// that registered it. Tracking the registration site, rather than
+	// just the anchor's schema, lets the matching clear keyword remove
+	// exactly the registration it made: a nested registration of the
+	// same resource is a no-op, and its clear must not remove the
+	// outer registration.
+	dynamicAnchors map[string]*recordDynamicAnchor
 }
 
 // validateRecordDynamicAnchor records a dynamic anchor during validation.
-// This is added by the builder when we see a $dynamicAnchor.
-// We record the dynamic anchor while validating this schema,
-// so that a $dynamicRef can see it.
+// This is added by the builder to every schema of a resource that
+// defines a $dynamicAnchor, as entering any schema of a resource brings
+// the resource's dynamic anchors into the dynamic scope.
+// Dynamic anchors use a top-down scope: the first registration wins.
 func validateRecordDynamicAnchor(arg schema.PartAny, instance any, state *schema.ValidationState) error {
 	da := arg.V.(*recordDynamicAnchor)
 	if *state.VersionData == nil {
 		*state.VersionData = &validationData{
-			dynamicAnchors: make(map[string]*schema.Schema),
+			dynamicAnchors: make(map[string]*recordDynamicAnchor),
 		}
 	}
 	vd := (*state.VersionData).(*validationData)
 	if _, ok := vd.dynamicAnchors[da.anchor]; ok {
-		// We already have a this dynamic anchors.
-		// Dynamic anchors use a top-down scope.
+		// We already have this dynamic anchor.
 		return nil
 	}
-	vd.dynamicAnchors[da.anchor] = da.schema
+	vd.dynamicAnchors[da.anchor] = da
 	return nil
 }
 
-// validateClearDynamicAnchor clear a dynamic anchor during validation.
-// This is added by the builder when we see a $dynamicAnchor,
-// at the end of the schema. This removes the dynamic anchor added by
+// validateClearDynamicAnchor clears a dynamic anchor during validation.
+// This is added by the builder at the end of every schema that has a
+// matching record keyword. It removes the dynamic anchor added by
 // validateRecordDynamicAnchor, so that the dynamic anchor is only
-// visible while processing the scheme that defines int.
+// visible while processing the schema that brought it into scope.
 func validateClearDynamicAnchor(arg schema.PartAny, instance any, state *schema.ValidationState) error {
 	da := arg.V.(*recordDynamicAnchor)
 	vd := (*state.VersionData).(*validationData)
-	if vd.dynamicAnchors[da.anchor] == da.schema {
+	if vd.dynamicAnchors[da.anchor] == da {
 		delete(vd.dynamicAnchors, da.anchor)
 	}
 	return nil
@@ -167,16 +173,19 @@ func resolveDynamicRef(arg schema.PartString, state *schema.ValidationState) (*s
 
 	uri, err := url.Parse(string(arg))
 	if err != nil {
-		return nil, err
+		return nil, motmedelErrors.NewWithTrace(
+			fmt.Errorf("failed to parse dynamic reference %q: %w", arg, err),
+			string(arg),
+		)
 	}
 	if uri.Fragment == "" || strings.HasPrefix(uri.Fragment, "/") {
 		return nil, nil
 	}
 
 	vd := (*state.VersionData).(*validationData)
-	s, ok := vd.dynamicAnchors[uri.Fragment]
+	da, ok := vd.dynamicAnchors[uri.Fragment]
 	if !ok {
 		return nil, nil
 	}
-	return s, nil
+	return da.schema, nil
 }

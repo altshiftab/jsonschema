@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"net/netip"
 
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 // ipv4Format requires a valid IPv4 address.

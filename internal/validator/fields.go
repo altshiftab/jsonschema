@@ -6,6 +6,7 @@ package validator
 
 import (
 	"cmp"
+	"fmt"
 	"reflect"
 	"slices"
 	"strings"
@@ -22,6 +23,10 @@ func instanceField(name string, instance any) (any, string, bool) {
 	}
 
 	v := reflect.Indirect(reflect.ValueOf(instance))
+	if !v.IsValid() {
+		// A nil pointer.
+		return nil, "", false
+	}
 
 	if m, ok := v.Interface().(map[string]any); ok {
 		// This is a JSON object.
@@ -59,6 +64,10 @@ func instanceFieldNames(instance any) (structFields, bool) {
 	}
 
 	v := reflect.Indirect(reflect.ValueOf(instance))
+	if !v.IsValid() {
+		// A nil pointer.
+		return structFields{}, false
+	}
 
 	if m, ok := v.Interface().(map[string]any); ok {
 		mf := make(map[string]*field)
@@ -78,6 +87,9 @@ func instanceFieldNames(instance any) (structFields, bool) {
 // setField sets the value of a field in instance.
 func setField(instance any, jsonName string, val any) error {
 	v := reflect.Indirect(reflect.ValueOf(instance))
+	if !v.IsValid() {
+		return fmt.Errorf("cannot set field %q in nil instance", jsonName)
+	}
 
 	if m, ok := v.Interface().(map[string]any); ok {
 		m[jsonName] = val

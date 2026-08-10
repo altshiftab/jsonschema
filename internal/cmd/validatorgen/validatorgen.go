@@ -13,12 +13,12 @@ import (
 	"os"
 
 	"github.com/altshiftab/jsonschema/internal/argtype"
-	"github.com/altshiftab/jsonschema/pkg/types/arg_type"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 type keyword struct {
 	name        string
-	argType     arg_type.ArgType
+	argType     schema.ArgType
 	alwaysValid bool
 }
 
@@ -33,7 +33,7 @@ package validator
 import (
 	"fmt"
 
-	"github.com/ianlancetaylor/jsonschema/pkg/types"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 `
 
@@ -46,8 +46,8 @@ func main() {
 // %[2] is the function name.
 const validatorFn = `// %[2]s converts a validator function that accepts
 // [types.ArgType%[1]s] to one that can be stored in a [types.Keyword].
-func %[2]s(fn func(arg types.Part%[1]s, instance any, state *types.ValidationState) error) func(types.PartValue, any, *types.ValidationState) error {
-	return func(arg types.PartValue, instance any, state *types.ValidationState) error {
+func %[2]s(fn func(arg schema.Part%[1]s, instance any, state *schema.ValidationState) error) func(schema.PartValue, any, *schema.ValidationState) error {
+	return func(arg schema.PartValue, instance any, state *schema.ValidationState) error {
 		v, err := To%[1]s(arg)
 		if err != nil {
 			return err
@@ -60,10 +60,10 @@ func %[2]s(fn func(arg types.Part%[1]s, instance any, state *types.ValidationSta
 // %[1] is the schema argument type.
 // %[2] is a description for an error message.
 const convertorFn = `// To%[1]s converts arg into a [types.Part%[1]s].
-func To%[1]s(arg types.PartValue) (types.Part%[1]s, error) {
-	v, ok := arg.(types.Part%[1]s)
+func To%[1]s(arg schema.PartValue) (schema.Part%[1]s, error) {
+	v, ok := arg.(schema.Part%[1]s)
 	if !ok {
-		var zero types.Part%[1]s
+		var zero schema.Part%[1]s
 		return zero, fmt.Errorf("got %%T, expect %[2]s", arg)
 	}
 	return v, nil
@@ -81,7 +81,7 @@ func printValidatorConvertors() {
 	fmt.Fprint(buf, header)
 	fmt.Fprintln(buf)
 
-	for t := arg_type.ArgTypeBool; t <= arg_type.ArgTypeAny; t++ {
+	for t := schema.ArgTypeBool; t <= schema.ArgTypeAny; t++ {
 		tn := argtype.Name(t)
 		name := "ArgType" + tn
 		fmt.Fprintln(buf)
@@ -89,31 +89,31 @@ func printValidatorConvertors() {
 
 		// For numbers we need to accept multiple possibilities,
 		// so those convertors are written by hand.
-		if t == arg_type.ArgTypeInt || t == arg_type.ArgTypeFloat {
+		if t == schema.ArgTypeInt || t == schema.ArgTypeFloat {
 			continue
 		}
 
 		var desc string
 		switch t {
-		case arg_type.ArgTypeBool:
+		case schema.ArgTypeBool:
 			desc = "bool"
-		case arg_type.ArgTypeString:
+		case schema.ArgTypeString:
 			desc = "a string"
-		case arg_type.ArgTypeStrings:
+		case schema.ArgTypeStrings:
 			desc = "an array of strings"
-		case arg_type.ArgTypeStringOrStrings:
+		case schema.ArgTypeStringOrStrings:
 			desc = "a string or an array of strings"
-		case arg_type.ArgTypeSchema:
+		case schema.ArgTypeSchema:
 			desc = "a schema"
-		case arg_type.ArgTypeSchemas:
+		case schema.ArgTypeSchemas:
 			desc = "an array of schemas"
-		case arg_type.ArgTypeMapSchema:
+		case schema.ArgTypeMapSchema:
 			desc = "a mapping from strings to schemas"
-		case arg_type.ArgTypeSchemaOrSchemas:
+		case schema.ArgTypeSchemaOrSchemas:
 			desc = "a single schema or an array of schemas"
-		case arg_type.ArgTypeMapArrayOrSchema:
+		case schema.ArgTypeMapArrayOrSchema:
 			desc = "a mapping from strings to either a schema or an array of strings"
-		case arg_type.ArgTypeAny:
+		case schema.ArgTypeAny:
 			desc = "any type"
 		default:
 			panic("can't happen")

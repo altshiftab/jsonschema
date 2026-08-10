@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:generate go run ../cmd/validatorgen
+//go:generate go run github.com/altshiftab/jsonschema/internal/cmd/validatorgen
 
 // Package validator contains functions to handle different schema arguments.
 package validator
@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/big"
 	"reflect"
 	"regexp"
 	"slices"
@@ -18,9 +19,9 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	errors2 "github.com/altshiftab/jsonschema/pkg/errors"
+	motmedelErrors "github.com/Motmedel/utils_go/pkg/errors"
 	"github.com/altshiftab/jsonschema/pkg/notes"
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 // ToInt converts arg into a types.PartInt.
@@ -69,7 +70,7 @@ func ValidateAllOf(arg schema.PartSchemas, instance any, state *schema.Validatio
 	var topErr error
 	for i, s := range arg {
 		if err := s.ValidateInPlaceSchema(instance, subState); err != nil {
-			errors2.AddError(&topErr, err, fmt.Sprintf("allOf/%d", i))
+			schema.AddError(&topErr, err, fmt.Sprintf("allOf/%d", i))
 		} else {
 			if !subState.Notes.IsEmpty() {
 				keepNotes = append(keepNotes, subState.Notes)
@@ -98,11 +99,11 @@ func ValidateAnyOf(arg schema.PartSchemas, instance any, state *schema.Validatio
 	var branchErrs []error
 	for i, s := range arg {
 		if err := s.ValidateInPlaceSchema(instance, subState); err != nil {
-			if !errors2.IsValidationError(err) {
-				errors2.AddError(&topErr, err, "")
+			if !schema.IsValidationError(err) {
+				schema.AddError(&topErr, err, "")
 			} else {
 				var be error
-				errors2.AddError(&be, err, fmt.Sprintf("anyOf/%d", i))
+				schema.AddError(&be, err, fmt.Sprintf("anyOf/%d", i))
 				branchErrs = append(branchErrs, be)
 			}
 		} else {
@@ -117,9 +118,9 @@ func ValidateAnyOf(arg schema.PartSchemas, instance any, state *schema.Validatio
 		subState.Notes.Clear()
 	}
 	if !ok {
-		errors2.AddValidationErrorStruct(&topErr, &errors2.ValidationError{Message: `no "anyof" schema matches`})
+		schema.AddValidationErrorStruct(&topErr, &schema.ValidationError{Message: `no "anyof" schema matches`})
 		for _, be := range branchErrs {
-			errors2.AddError(&topErr, be, "")
+			schema.AddError(&topErr, be, "")
 		}
 	} else {
 		state.Notes.AddNotes(keepNotes...)
@@ -140,8 +141,8 @@ func ValidateOneOf(arg schema.PartSchemas, instance any, state *schema.Validatio
 	var topErr error
 	for _, s := range arg {
 		if err := s.ValidateInPlaceSchema(instance, subState); err != nil {
-			if !errors2.IsValidationError(err) {
-				errors2.AddError(&topErr, err, "")
+			if !schema.IsValidationError(err) {
+				schema.AddError(&topErr, err, "")
 			}
 		} else {
 			c++
@@ -151,9 +152,9 @@ func ValidateOneOf(arg schema.PartSchemas, instance any, state *schema.Validatio
 	}
 	if c != 1 {
 		if c == 0 {
-			errors2.AddValidationErrorStruct(&topErr, &errors2.ValidationError{Message: `no match for "oneof" schema`})
+			schema.AddValidationErrorStruct(&topErr, &schema.ValidationError{Message: `no match for "oneof" schema`})
 		} else {
-			errors2.AddValidationErrorStruct(&topErr, &errors2.ValidationError{Message: fmt.Sprintf(`%d matches for "oneof" schema`, c)})
+			schema.AddValidationErrorStruct(&topErr, &schema.ValidationError{Message: fmt.Sprintf(`%d matches for "oneof" schema`, c)})
 		}
 	} else {
 		state.Notes.AddNotes(keepNotes)
@@ -169,13 +170,13 @@ func ValidateNot(arg schema.PartSchema, instance any, state *schema.ValidationSt
 	}
 
 	if err := arg.S.ValidateInPlaceSchema(instance, subState); err != nil {
-		if !errors2.IsValidationError(err) {
+		if !schema.IsValidationError(err) {
 			return err
 		}
 		state.Notes.AddNotes(subState.Notes)
 		return nil
 	} else {
-		return &errors2.ValidationError{
+		return &schema.ValidationError{
 			Message: `"not" schema matched`,
 		}
 	}
@@ -191,7 +192,7 @@ func ValidateIf(arg schema.PartSchema, instance any, state *schema.ValidationSta
 
 	ok := false
 	if err := arg.S.ValidateInPlaceSchema(instance, subState); err != nil {
-		if !errors2.IsValidationError(err) {
+		if !schema.IsValidationError(err) {
 			return err
 		}
 	} else {
@@ -233,7 +234,7 @@ func ValidateElse(arg schema.PartSchema, instance any, state *schema.ValidationS
 		return err
 	}
 
-	err = arg.S.ValidateInPlaceSchema(instance, state)
+	err = arg.S.ValidateInPlaceSchema(instance, subState)
 	if err == nil {
 		state.Notes.AddNotes(subState.Notes)
 	}
@@ -255,7 +256,7 @@ func ValidateDependentSchemas(arg schema.PartMapSchema, instance any, state *sch
 			continue
 		}
 		if err := s.ValidateInPlaceSchema(instance, subState); err != nil {
-			errors2.AddError(&topErr, err, "dependentSchemas/"+name)
+			schema.AddError(&topErr, err, "dependentSchemas/"+name)
 		} else {
 			if !subState.Notes.IsEmpty() {
 				keepNotes = append(keepNotes, subState.Notes)
@@ -304,7 +305,7 @@ func ValidatePrefixItems(arg schema.PartSchemas, instance any, state *schema.Val
 				}
 			}
 
-			if err := s.ValidateSubSchema(val, state); err != nil {
+			if err := validateItemSchema(s, val, i, state); err != nil {
 				return err
 			}
 		}
@@ -334,13 +335,25 @@ func ValidatePrefixItems(arg schema.PartSchemas, instance any, state *schema.Val
 				}
 			}
 
-			if err := s.ValidateSubSchema(val, state); err != nil {
+			if err := validateItemSchema(s, val, i, state); err != nil {
 				return err
 			}
 		}
 	}
 
 	return nil
+}
+
+// validateItemSchema validates one array element against a subschema,
+// tracking the element index in the instance location.
+func validateItemSchema(s *schema.Schema, val any, idx int, state *schema.ValidationState) error {
+	state.PushInstanceToken(strconv.Itoa(idx))
+	err := s.ValidateSubSchema(val, state)
+	if err != nil {
+		err = schema.EnsureInstanceLocation(err, state.InstancePointer())
+	}
+	state.PopInstanceToken()
+	return err
 }
 
 // ValidateItems implements the items keyword.
@@ -363,7 +376,7 @@ func ValidateItems(arg schema.PartSchema, instance any, state *schema.Validation
 		}
 
 		for ; idx < len(a); idx++ {
-			if err := arg.S.ValidateSubSchema(a[idx], state); err != nil {
+			if err := validateItemSchema(arg.S, a[idx], idx, state); err != nil {
 				return err
 			}
 		}
@@ -381,7 +394,7 @@ func ValidateItems(arg schema.PartSchema, instance any, state *schema.Validation
 
 		for ; idx < ln; idx++ {
 			e := v.Index(idx).Interface()
-			if err := arg.S.ValidateSubSchema(e, state); err != nil {
+			if err := validateItemSchema(arg.S, e, idx, state); err != nil {
 				return err
 			}
 		}
@@ -436,7 +449,7 @@ func ValidateContains(arg schema.PartSchema, instance any, state *schema.Validat
 	}
 
 	if !topOK {
-		return &errors2.ValidationError{
+		return &schema.ValidationError{
 			Message: `no array element matches "contains" schema`,
 		}
 	}
@@ -529,7 +542,7 @@ func ValidateProperties(arg schema.PartMapSchema, instance any, state *schema.Va
 		if err := s.ValidateSubSchema(f, state); err != nil {
 			// Ensure nested errors carry instance location pointer.
 			err = schema.EnsureInstanceLocation(err, state.InstancePointer())
-			errors2.AddError(&topErr, err, "properties/"+name)
+			schema.AddError(&topErr, err, "properties/"+name)
 		}
 		state.PopInstanceToken()
 
@@ -556,7 +569,10 @@ func ValidatePatternProperties(arg schema.PartMapSchema, instance any, state *sc
 	for reString, s := range arg {
 		re, err := regexp.Compile(reString)
 		if err != nil {
-			return fmt.Errorf(`"patternProperties" regexp %q failed: %v`, reString, err)
+			return motmedelErrors.NewWithTrace(
+				fmt.Errorf(`"patternProperties" regexp %q failed: %w`, reString, err),
+				reString,
+			)
 		}
 		res = append(res, regexpSchema{re, s})
 	}
@@ -577,9 +593,12 @@ func ValidatePatternProperties(arg schema.PartMapSchema, instance any, state *sc
 			}
 
 			if vf, jsonName, ok := instanceField(name, instance); ok {
+				state.PushInstanceToken(jsonName)
 				if err := r.s.ValidateSubSchema(vf, state); err != nil {
-					errors2.AddError(&topErr, err, "patternProperties/"+name)
+					err = schema.EnsureInstanceLocation(err, state.InstancePointer())
+					schema.AddError(&topErr, err, "patternProperties/"+name)
 				}
+				state.PopInstanceToken()
 
 				// Add a note for additionalProperties to read.
 				note := propertiesNote{
@@ -611,21 +630,32 @@ func ValidateAdditionalProperties(arg schema.PartSchema, instance any, state *sc
 		}
 	}
 
+	// When the argument is the "false" schema, any additional property is
+	// simply unknown, and deserves a clearer message than
+	// "false schema never matches".
+	isFalseSchema := false
+	if pv, ok := arg.S.LookupKeyword("$bool"); ok {
+		isFalseSchema = !bool(pv.(schema.PartBool))
+	}
+
 	var topErr error
 	for name := range names.byExactName {
 		if found[name] {
 			continue
 		}
 		if vf, _, ok := instanceField(name, instance); ok {
+			state.PushInstanceToken(name)
 			if err := arg.S.ValidateSubSchema(vf, state); err != nil {
-				var validationError *errors2.ValidationError
-				// NOTE: This should always be true?
-				if errors.As(err, &validationError) {
-					validationError.Message = fmt.Sprintf("unknown property %q", name)
-					validationError.KeywordLocation = "#"
+				if isFalseSchema {
+					if validationError, ok := errors.AsType[*schema.ValidationError](err); ok {
+						validationError.Message = fmt.Sprintf("unknown property %q", name)
+						validationError.KeywordLocation = "#"
+					}
 				}
-				errors2.AddError(&topErr, err, "additionalProperties")
+				err = schema.EnsureInstanceLocation(err, state.InstancePointer())
+				schema.AddError(&topErr, err, "additionalProperties")
 			}
+			state.PopInstanceToken()
 		}
 		note := propertiesNote{
 			field:  name,
@@ -645,7 +675,7 @@ func ValidatePropertyNames(arg schema.PartSchema, instance any, state *schema.Va
 	var topErr error
 	for name := range names.byExactName {
 		if err := arg.S.ValidateSubSchema(name, state); err != nil {
-			errors2.AddError(&topErr, err, "propertyNames/"+name)
+			schema.AddError(&topErr, err, "propertyNames/"+name)
 		}
 	}
 	return topErr
@@ -687,7 +717,7 @@ func ValidateUnevaluatedItems(arg schema.PartSchema, instance any, state *schema
 			if slices.Contains(contains, idx) {
 				continue
 			}
-			if err := arg.S.ValidateSubSchema(a[idx], state); err != nil {
+			if err := validateItemSchema(arg.S, a[idx], idx, state); err != nil {
 				return err
 			}
 		}
@@ -708,7 +738,7 @@ func ValidateUnevaluatedItems(arg schema.PartSchema, instance any, state *schema
 				continue
 			}
 			e := v.Index(idx).Interface()
-			if err := arg.S.ValidateSubSchema(e, state); err != nil {
+			if err := validateItemSchema(arg.S, e, idx, state); err != nil {
 				return err
 			}
 		}
@@ -743,9 +773,12 @@ func ValidateUnevaluatedProperties(arg schema.PartSchema, instance any, state *s
 			continue
 		}
 		if vf, _, ok := instanceField(name, instance); ok {
+			state.PushInstanceToken(name)
 			if err := arg.S.ValidateSubSchema(vf, state); err != nil {
-				errors2.AddError(&topErr, err, "unevaluatedProperties/"+name)
+				err = schema.EnsureInstanceLocation(err, state.InstancePointer())
+				schema.AddError(&topErr, err, "unevaluatedProperties/"+name)
 			}
+			state.PopInstanceToken()
 		}
 		note := propertiesNote{
 			field:  name,
@@ -764,8 +797,13 @@ func ValidateType(arg schema.PartStringOrStrings, instance any, state *schema.Va
 		case "null":
 			return instance == nil, nil
 		case "boolean":
-			_, ok := instance.(bool)
-			return ok, nil
+			if _, ok := instance.(bool); ok {
+				return true, nil
+			}
+			if instance == nil {
+				return false, nil
+			}
+			return reflect.TypeOf(instance).Kind() == reflect.Bool, nil
 		case "object":
 			if _, ok := instance.(map[string]any); ok {
 				// JSON object
@@ -800,8 +838,13 @@ func ValidateType(arg schema.PartStringOrStrings, instance any, state *schema.Va
 				return false, nil
 			}
 		case "string":
-			_, ok := instance.(string)
-			return ok, nil
+			if _, ok := instance.(string); ok {
+				return true, nil
+			}
+			if instance == nil {
+				return false, nil
+			}
+			return reflect.TypeOf(instance).Kind() == reflect.String, nil
 		case "integer":
 			if instance == nil {
 				return false, nil
@@ -854,7 +897,7 @@ func ValidateType(arg schema.PartStringOrStrings, instance any, state *schema.Va
 			return err
 		}
 		if !ok {
-			return &errors2.ValidationError{
+			return &schema.ValidationError{
 				Message: fmt.Sprintf("instance has type %q, want %q", typeForError(instance), arg.String),
 			}
 		}
@@ -869,7 +912,7 @@ func ValidateType(arg schema.PartStringOrStrings, instance any, state *schema.Va
 				return nil
 			}
 		}
-		return &errors2.ValidationError{
+		return &schema.ValidationError{
 			Message: fmt.Sprintf("instance has type %q, want one of %v", typeForError(instance), arg),
 		}
 	}
@@ -888,7 +931,7 @@ func ValidateEnum(arg schema.PartAny, instance any, state *schema.ValidationStat
 			return nil
 		}
 	}
-	return &errors2.ValidationError{
+	return &schema.ValidationError{
 		Message: `no "enum" value matched`,
 	}
 }
@@ -898,7 +941,7 @@ func ValidateConst(arg schema.PartAny, instance any, state *schema.ValidationSta
 	// TODO: we have to be able to compare a map[string]any to a struct,
 	// and a []any to a slice of some other type.
 	if !reflect.DeepEqual(instance, arg.V) {
-		return &errors2.ValidationError{
+		return &schema.ValidationError{
 			Message: fmt.Sprintf(`"const" failed: got %v, want %v`, instance, arg.V),
 		}
 	}
@@ -907,17 +950,41 @@ func ValidateConst(arg schema.PartAny, instance any, state *schema.ValidationSta
 
 // ValidateMultipleOf implements the multipleOf keyword.
 func ValidateMultipleOf(arg schema.PartFloat, instance any, state *schema.ValidationState) error {
+	if arg <= 0 {
+		return fmt.Errorf(`"multipleOf" argument is %v, must be greater than zero`, arg)
+	}
 	f, ok := instanceFloat(instance)
 	if !ok {
 		return nil
 	}
 	quo := f / float64(arg)
-	if quo != math.Trunc(quo) || math.IsInf(quo, 0) {
-		return &errors2.ValidationError{
-			Message: fmt.Sprintf(`"multipleof" failed: value %v is not a multiple of %v`, instance, arg),
-		}
+	if quo == math.Trunc(quo) && !math.IsInf(quo, 0) {
+		return nil
 	}
-	return nil
+	if isDecimalMultipleOf(f, float64(arg)) {
+		return nil
+	}
+	return &schema.ValidationError{
+		Message: fmt.Sprintf(`"multipleof" failed: value %v is not a multiple of %v`, instance, arg),
+	}
+}
+
+// isDecimalMultipleOf reports whether f is a multiple of arg using
+// exact decimal arithmetic. JSON numbers are decimal literals, but they
+// are decoded into binary floats, so a quotient like 19.99/0.01 is not
+// exactly 1999 in float64. The shortest decimal representation of a
+// float64 recovers the decimal literal that produced it, and dividing
+// those as rationals gives the answer the schema author intended.
+func isDecimalMultipleOf(f, arg float64) bool {
+	rf, ok := new(big.Rat).SetString(strconv.FormatFloat(f, 'g', -1, 64))
+	if !ok {
+		return false
+	}
+	ra, ok := new(big.Rat).SetString(strconv.FormatFloat(arg, 'g', -1, 64))
+	if !ok || ra.Sign() == 0 {
+		return false
+	}
+	return new(big.Rat).Quo(rf, ra).IsInt()
 }
 
 // ValidateMaximum implements the maximum keyword.
@@ -927,7 +994,7 @@ func ValidateMaximum(arg schema.PartFloat, instance any, state *schema.Validatio
 		return nil
 	}
 	if schema.PartFloat(f) > arg {
-		return &errors2.ValidationError{
+		return &schema.ValidationError{
 			Message: fmt.Sprintf(`value %v is larger than "maximum" limit %v`, instance, arg),
 		}
 	}
@@ -941,8 +1008,8 @@ func ValidateExclusiveMaximum(arg schema.PartFloat, instance any, state *schema.
 		return nil
 	}
 	if schema.PartFloat(f) >= arg {
-		return &errors2.ValidationError{
-			Message: fmt.Sprintf(`value %v is larger than "exclusiveMaximum" limit %v`, instance, arg),
+		return &schema.ValidationError{
+			Message: fmt.Sprintf(`value %v is not less than "exclusiveMaximum" limit %v`, instance, arg),
 		}
 	}
 	return nil
@@ -955,8 +1022,8 @@ func ValidateMinimum(arg schema.PartFloat, instance any, state *schema.Validatio
 		return nil
 	}
 	if schema.PartFloat(f) < arg {
-		return &errors2.ValidationError{
-			Message: fmt.Sprintf(`value %v is larger than "minimum" limit %v`, instance, arg),
+		return &schema.ValidationError{
+			Message: fmt.Sprintf(`value %v is smaller than "minimum" limit %v`, instance, arg),
 		}
 	}
 	return nil
@@ -969,8 +1036,8 @@ func ValidateExclusiveMinimum(arg schema.PartFloat, instance any, state *schema.
 		return nil
 	}
 	if schema.PartFloat(f) <= arg {
-		return &errors2.ValidationError{
-			Message: fmt.Sprintf(`value %v is larger than "exclusiveMinimum" limit %v`, instance, arg),
+		return &schema.ValidationError{
+			Message: fmt.Sprintf(`value %v is not greater than "exclusiveMinimum" limit %v`, instance, arg),
 		}
 	}
 	return nil
@@ -981,9 +1048,9 @@ func ValidateMaxLength(arg schema.PartInt, instance any, state *schema.Validatio
 	if arg < 0 {
 		return fmt.Errorf(`"maxLength" argument is %d, must be non-negative`, arg)
 	}
-	if s, ok := instance.(string); ok {
+	if s, ok := instanceString(instance); ok {
 		if schema.PartInt(utf8.RuneCountInString(s)) > arg {
-			return &errors2.ValidationError{
+			return &schema.ValidationError{
 				Message: fmt.Sprintf(`value %q too long for "maxLength" argument %d`, s, arg),
 			}
 		}
@@ -994,11 +1061,11 @@ func ValidateMaxLength(arg schema.PartInt, instance any, state *schema.Validatio
 // ValidateMinLength implements the minLength keyword.
 func ValidateMinLength(arg schema.PartInt, instance any, state *schema.ValidationState) error {
 	if arg < 0 {
-		return fmt.Errorf(`"maxLength" argument is %d, must be non-negative`, arg)
+		return fmt.Errorf(`"minLength" argument is %d, must be non-negative`, arg)
 	}
-	if s, ok := instance.(string); ok {
+	if s, ok := instanceString(instance); ok {
 		if schema.PartInt(utf8.RuneCountInString(s)) < arg {
-			return &errors2.ValidationError{
+			return &schema.ValidationError{
 				Message: fmt.Sprintf(`value %q too short for "minLength" argument %d`, s, arg),
 			}
 		}
@@ -1008,18 +1075,21 @@ func ValidateMinLength(arg schema.PartInt, instance any, state *schema.Validatio
 
 // ValidatePattern implements the pattern keyword.
 func ValidatePattern(arg schema.PartString, instance any, state *schema.ValidationState) error {
-	s, ok := instance.(string)
+	s, ok := instanceString(instance)
 	if !ok {
 		return nil
 	}
 
 	re, err := regexp.Compile(string(arg))
 	if err != nil {
-		return fmt.Errorf(`"pattern" regexp %q failed: %v`, arg, err)
+		return motmedelErrors.NewWithTrace(
+			fmt.Errorf(`"pattern" regexp %q failed: %w`, arg, err),
+			string(arg),
+		)
 	}
 
 	if !re.MatchString(s) {
-		return &errors2.ValidationError{
+		return &schema.ValidationError{
 			Message: fmt.Sprintf(`"pattern" regexp %q did not match %q`, arg, s),
 		}
 	}
@@ -1041,7 +1111,7 @@ func ValidateMaxItems(arg schema.PartInt, instance any, state *schema.Validation
 	}
 
 	if schema.PartInt(ln) > arg {
-		return &errors2.ValidationError{
+		return &schema.ValidationError{
 			Message: fmt.Sprintf(`length %d too long for "maxItems" argument %d`, ln, arg),
 		}
 	}
@@ -1063,7 +1133,7 @@ func ValidateMinItems(arg schema.PartInt, instance any, state *schema.Validation
 	}
 
 	if schema.PartInt(ln) < arg {
-		return &errors2.ValidationError{
+		return &schema.ValidationError{
 			Message: fmt.Sprintf(`length %d too short for "minItems" argument %d`, ln, arg),
 		}
 	}
@@ -1097,7 +1167,7 @@ func ValidateUniqueItems(arg schema.PartBool, instance any, state *schema.Valida
 		for i := 0; i < ln; i++ {
 			evi := v.Index(i).Interface()
 			if m[evi] {
-				return &errors2.ValidationError{
+				return &schema.ValidationError{
 					Message: fmt.Sprintf(`"uniqueItems" failure: %v appears more than once`, evi),
 				}
 			}
@@ -1107,7 +1177,7 @@ func ValidateUniqueItems(arg schema.PartBool, instance any, state *schema.Valida
 		for i := 0; i < ln; i++ {
 			for j := i + 1; j < ln; j++ {
 				if reflect.DeepEqual(v.Index(i).Interface(), v.Index(j).Interface()) {
-					return &errors2.ValidationError{
+					return &schema.ValidationError{
 						Message: fmt.Sprintf(`"uniqueItems" failure: %v appears more than once`, v.Index(i).Interface()),
 					}
 				}
@@ -1123,8 +1193,8 @@ func ValidateMaxContains(arg schema.PartInt, instance any, state *schema.Validat
 	if matched, ok := state.Notes.Get("contains"); ok {
 		ln := len(matched.([]int))
 		if schema.PartInt(ln) > arg {
-			return &errors2.ValidationError{
-				Message: fmt.Sprintf(`array length %d is more than "maxContains" requirement %d`, ln, arg),
+			return &schema.ValidationError{
+				Message: fmt.Sprintf(`%d array elements match "contains" schema, more than "maxContains" requirement %d`, ln, arg),
 			}
 		}
 	}
@@ -1136,8 +1206,8 @@ func ValidateMinContains(arg schema.PartInt, instance any, state *schema.Validat
 	if matched, ok := state.Notes.Get("contains"); ok {
 		ln := len(matched.([]int))
 		if schema.PartInt(ln) < arg {
-			return &errors2.ValidationError{
-				Message: fmt.Sprintf(`array length %d is less than "minContains" requirement %d`, ln, arg),
+			return &schema.ValidationError{
+				Message: fmt.Sprintf(`%d array elements match "contains" schema, less than "minContains" requirement %d`, ln, arg),
 			}
 		}
 	}
@@ -1152,7 +1222,7 @@ func ValidateMaxProperties(arg schema.PartInt, instance any, state *schema.Valid
 	}
 	ln := len(names.byExactName)
 	if schema.PartInt(ln) > arg {
-		return &errors2.ValidationError{
+		return &schema.ValidationError{
 			Message: fmt.Sprintf(`number of properties %d is more than "maxProperties" required %d`, ln, arg),
 		}
 	}
@@ -1167,7 +1237,7 @@ func ValidateMinProperties(arg schema.PartInt, instance any, state *schema.Valid
 	}
 	ln := len(names.byExactName)
 	if schema.PartInt(ln) < arg {
-		return &errors2.ValidationError{
+		return &schema.ValidationError{
 			Message: fmt.Sprintf(`number of properties %d is less than "minProperties" required %d`, ln, arg),
 		}
 	}
@@ -1184,10 +1254,10 @@ func ValidateRequired(arg schema.PartStrings, instance any, state *schema.Valida
 	var topErr error
 	for _, s := range arg {
 		if _, found := names.byExactName[s]; !found {
-			err := &errors2.ValidationError{
+			err := &schema.ValidationError{
 				Message: fmt.Sprintf("missing required property %q", s),
 			}
-			errors2.AddError(&topErr, err, "required")
+			schema.AddError(&topErr, err, "required")
 		}
 	}
 	return topErr
@@ -1221,7 +1291,7 @@ func ValidateDependentRequired(arg schema.PartAny, instance any, state *schema.V
 				return fmt.Errorf(`"dependentRequired element %q element type %T, want string`, k, e)
 			}
 			if _, found := names.byExactName[n]; !found {
-				return &errors2.ValidationError{
+				return &schema.ValidationError{
 					Message: fmt.Sprintf(`"dependentRequired" failure: have field %q but not field %q`, k, n),
 				}
 			}
@@ -1264,8 +1334,8 @@ func ValidateFormat(arg schema.PartString, instance any, state *schema.Validatio
 		return nil
 	}
 	err := fv(instance, state)
-	if err != nil && !errors2.IsValidationError(err) {
-		err = &errors2.ValidationError{
+	if err != nil && !schema.IsValidationError(err) {
+		err = &schema.ValidationError{
 			Message: err.Error(),
 		}
 	}
@@ -1279,16 +1349,9 @@ func ValidateDefault(arg schema.PartAny, instance any, state *schema.ValidationS
 }
 
 // instanceFloat returns instance as a floating-point number,
-// and reports whether the conversion succeeded.
+// and reports whether the instance is a number.
+// Strings are not numbers; numeric keywords ignore non-numeric instances.
 func instanceFloat(instance any) (float64, bool) {
-	if s, ok := instance.(string); ok {
-		f, err := strconv.ParseFloat(s, 64)
-		if err != nil {
-			return 0, false
-		}
-		return f, true
-	}
-
 	v := reflect.ValueOf(instance)
 	switch {
 	case v.CanInt():
@@ -1300,6 +1363,22 @@ func instanceFloat(instance any) (float64, bool) {
 	default:
 		return 0, false
 	}
+}
+
+// instanceString returns instance as a string,
+// and reports whether the instance is a string.
+// This accepts defined types whose underlying type is string.
+func instanceString(instance any) (string, bool) {
+	if s, ok := instance.(string); ok {
+		return s, true
+	}
+	if instance == nil {
+		return "", false
+	}
+	if v := reflect.ValueOf(instance); v.Kind() == reflect.String {
+		return v.String(), true
+	}
+	return "", false
 }
 
 // ValidateDependencies validates the draft7 dependencies keyword.
@@ -1324,17 +1403,16 @@ func ValidateDependencies(arg schema.PartMapArrayOrSchema, instance any, state *
 
 		if as.Schema != nil {
 			if err := as.Schema.ValidateInPlaceSchema(instance, subState); err != nil {
-				errors2.AddError(&topErr, err, "dependencies/"+name)
+				schema.AddError(&topErr, err, "dependencies/"+name)
 			} else {
 				if !subState.Notes.IsEmpty() {
 					keepNotes = append(keepNotes, subState.Notes)
 				}
 			}
-
 		} else {
 			for _, n := range as.Array {
 				if _, found := names.byExactName[n]; !found {
-					return &errors2.ValidationError{
+					return &schema.ValidationError{
 						Message: fmt.Sprintf(`"dependencies" failure: have field %q but not field %q`, name, n),
 					}
 				}

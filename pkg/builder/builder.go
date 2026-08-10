@@ -24,8 +24,7 @@ import (
 	"time"
 
 	"github.com/altshiftab/jsonschema/internal/argtype"
-	"github.com/altshiftab/jsonschema/pkg/types/arg_type"
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 // Builder is a JSON schema builder.
@@ -63,17 +62,17 @@ func (b *Builder) NewBuilder() *Builder {
 // AddBool adds a keyword whose argument is a bool.
 // This panics if the keyword does not expect a bool.
 func (b *Builder) AddBool(keyword *schema.Keyword, v bool) *Builder {
-	b.check(keyword, arg_type.ArgTypeBool)
+	b.check(keyword, schema.ArgTypeBool)
 	b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartBool(v)))
 	return b
 }
 
 // AddString adds a keyword whose argument is a string.
 func (b *Builder) AddString(keyword *schema.Keyword, s string) *Builder {
-	if keyword.ArgType == arg_type.ArgTypeStringOrStrings {
+	if keyword.ArgType == schema.ArgTypeStringOrStrings {
 		b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartStringOrStrings{String: s}))
 	} else {
-		b.check(keyword, arg_type.ArgTypeString)
+		b.check(keyword, schema.ArgTypeString)
 		b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartString(s)))
 	}
 	return b
@@ -81,10 +80,10 @@ func (b *Builder) AddString(keyword *schema.Keyword, s string) *Builder {
 
 // AddStrings adds a keyword whose argument is an array of strings.
 func (b *Builder) AddStrings(keyword *schema.Keyword, s []string) *Builder {
-	if keyword.ArgType == arg_type.ArgTypeStringOrStrings {
+	if keyword.ArgType == schema.ArgTypeStringOrStrings {
 		b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartStringOrStrings{Strings: s}))
 	} else {
-		b.check(keyword, arg_type.ArgTypeStrings)
+		b.check(keyword, schema.ArgTypeStrings)
 		b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartStrings(s)))
 	}
 	return b
@@ -92,14 +91,14 @@ func (b *Builder) AddStrings(keyword *schema.Keyword, s []string) *Builder {
 
 // AddInt adds a keyword whose argument is an int.
 func (b *Builder) AddInt(keyword *schema.Keyword, i int64) *Builder {
-	b.check(keyword, arg_type.ArgTypeInt)
+	b.check(keyword, schema.ArgTypeInt)
 	b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartInt(i)))
 	return b
 }
 
 // AddFloat adds a keyword whose argument is an float.
 func (b *Builder) AddFloat(keyword *schema.Keyword, f float64) *Builder {
-	b.check(keyword, arg_type.ArgTypeFloat)
+	b.check(keyword, schema.ArgTypeFloat)
 	b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartFloat(f)))
 	return b
 }
@@ -107,7 +106,7 @@ func (b *Builder) AddFloat(keyword *schema.Keyword, f float64) *Builder {
 // AddSchema adds a keyword whose argument is a schema.
 // This panics if the schema is nil.
 func (b *Builder) AddSchema(keyword *schema.Keyword, s *schema.Schema) *Builder {
-	b.check(keyword, arg_type.ArgTypeSchema)
+	b.check(keyword, schema.ArgTypeSchema)
 	if s == nil {
 		panic(fmt.Sprintf("%s schema is nil", keyword.Name))
 	}
@@ -119,7 +118,7 @@ func (b *Builder) AddSchema(keyword *schema.Keyword, s *schema.Schema) *Builder 
 // This panics if the list of schemas is empty or any is nil.
 // This may be used to implement a custom schema keyword.
 func (b *Builder) AddSchemas(keyword *schema.Keyword, schemas []*schema.Schema) *Builder {
-	b.check(keyword, arg_type.ArgTypeSchemas)
+	b.check(keyword, schema.ArgTypeSchemas)
 	if len(schemas) == 0 {
 		panic(fmt.Sprintf("%s requires at least one schema", keyword.Name))
 	}
@@ -135,7 +134,7 @@ func (b *Builder) AddSchemas(keyword *schema.Keyword, schemas []*schema.Schema) 
 // AddMapSchema adds a keyword whose argument is a mapping
 // from strings to schemas.
 func (b *Builder) AddMapSchema(keyword *schema.Keyword, m map[string]*schema.Schema) *Builder {
-	b.check(keyword, arg_type.ArgTypeMapSchema)
+	b.check(keyword, schema.ArgTypeMapSchema)
 	b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, schema.PartMapSchema(m)))
 	return b
 }
@@ -143,7 +142,7 @@ func (b *Builder) AddMapSchema(keyword *schema.Keyword, m map[string]*schema.Sch
 // AddSchemaOrSchemas adds a keyword whose argument is
 // either a single schema or an array of schemas.
 func (b *Builder) AddSchemaOrSchemas(keyword *schema.Keyword, pv schema.PartSchemaOrSchemas) *Builder {
-	b.check(keyword, arg_type.ArgTypeSchemaOrSchemas)
+	b.check(keyword, schema.ArgTypeSchemaOrSchemas)
 	b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, pv))
 	return b
 }
@@ -153,7 +152,7 @@ func (b *Builder) AddSchemaOrSchemas(keyword *schema.Keyword, pv schema.PartSche
 // This is like the draft7 "dependencies" keyword.
 // This probably should not be used for anything else.
 func (b *Builder) AddMapArrayOrSchema(keyword *schema.Keyword, pv schema.PartMapArrayOrSchema) *Builder {
-	b.check(keyword, arg_type.ArgTypeMapArrayOrSchema)
+	b.check(keyword, schema.ArgTypeMapArrayOrSchema)
 	b.s.Parts = append(b.s.Parts, schema.MakePart(keyword, pv))
 	return b
 }
@@ -165,9 +164,9 @@ func (b *Builder) AddAny(keyword *schema.Keyword, v any) *Builder {
 }
 
 // check panics if a keyword is used with the wrong type.
-func (b *Builder) check(keyword *schema.Keyword, want arg_type.ArgType) {
+func (b *Builder) check(keyword *schema.Keyword, want schema.ArgType) {
 	switch keyword.ArgType {
-	case want, arg_type.ArgTypeAny:
+	case want, schema.ArgTypeAny:
 	default:
 		argName := argtype.Name(keyword.ArgType)
 		panic(fmt.Sprintf("Add%s called for %s which expects %s", argName, keyword.Name, argName))

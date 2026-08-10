@@ -8,24 +8,30 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/altshiftab/jsonschema/internal/argtype"
-	"github.com/altshiftab/jsonschema/pkg/types/arg_type"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 // writeBuilderHeader writes the start of the Builder section.
 func writeBuilderHeader(builderBuf *bytes.Buffer) {
-	for t := arg_type.ArgTypeBool; t <= arg_type.ArgTypeAny; t++ {
+	for t := schema.ArgTypeBool; t <= schema.ArgTypeAny; t++ {
 		// We don't add a method for StringOrStrings;
 		// instead we use AddString and AddStrings.
-		if t == arg_type.ArgTypeStringOrStrings {
+		if t == schema.ArgTypeStringOrStrings {
 			continue
 		}
 
 		n := argtype.Name(t)
+		typ, ok := goArgType[strings.ToLower(n[:1])+n[1:]]
+		if !ok {
+			fmt.Fprintf(os.Stderr, "no Go type for argument type %s\n", n)
+			os.Exit(2)
+		}
 		fmt.Fprintln(builderBuf)
 		fmt.Fprintf(builderBuf, "// Add%s adds a keyword with an argument of type %s.\n", n, n)
-		fmt.Fprintf(builderBuf, "func (b *Builder) Add%s(keyword *types.Keyword, v %s) *Builder {\n", n, argtype.GoType(t))
+		fmt.Fprintf(builderBuf, "func (b *Builder) Add%s(keyword *schema.Keyword, v %s) *Builder {\n", n, typ)
 		fmt.Fprintf(builderBuf, "\tb.b = b.b.Add%s(keyword, v)\n", n)
 		fmt.Fprintf(builderBuf, "\treturn b\n")
 		fmt.Fprintln(builderBuf, "}")
@@ -88,10 +94,10 @@ var goArgType = map[string]string{
 	// no entry for "stringOrStrings"; uses string and strings instead
 	"int":              "int64",
 	"float":            "float64",
-	"schema":           "*types.Schema",
-	"schemas":          "[]*types.Schema",
-	"mapSchema":        "map[string]*types.Schema",
-	"schemaOrSchemas":  "types.PartSchemaOrSchemas",
-	"mapArrayOrSchema": "map[string]types.ArrayOrSchema",
+	"schema":           "*schema.Schema",
+	"schemas":          "[]*schema.Schema",
+	"mapSchema":        "map[string]*schema.Schema",
+	"schemaOrSchemas":  "schema.PartSchemaOrSchemas",
+	"mapArrayOrSchema": "map[string]schema.ArrayOrSchema",
 	"any":              "any",
 }

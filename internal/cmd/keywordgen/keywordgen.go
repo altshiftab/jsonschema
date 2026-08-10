@@ -42,8 +42,9 @@ package %s
 import (
 	"cmp"
 
-	"github.com/ianlancetaylor/jsonschema/pkg/types"
-	"github.com/ianlancetaylor/jsonschema/internal/validator"
+	"github.com/altshiftab/jsonschema/internal/validator"
+	"github.com/altshiftab/jsonschema/pkg/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 var _  = validator.ValidateTrue // avoid warning if we don't use validator below
@@ -76,7 +77,7 @@ func main() {
 
 	mapBuf := new(bytes.Buffer)
 	fmt.Fprintln(mapBuf, "// keywordMap maps keyword names to [types.Keyword] values.")
-	fmt.Fprintln(mapBuf, "var keywordMap = map[string]*types.Keyword{")
+	fmt.Fprintln(mapBuf, "var keywordMap = map[string]*schema.Keyword{")
 
 	builderBuf := new(bytes.Buffer)
 	writeBuilderHeader(builderBuf)
@@ -180,9 +181,9 @@ func printKeywords(buf *bytes.Buffer, keywords *keywordsData) {
 		if i > 0 {
 			fmt.Fprintln(buf)
 		}
-		fmt.Fprintf(buf, "\t%sKeyword = types.Keyword{\n", k.Name[keywords.Prefix:])
+		fmt.Fprintf(buf, "\t%sKeyword = schema.Keyword{\n", k.Name[keywords.Prefix:])
 		fmt.Fprintf(buf, "\t\tName: %q,\n", k.Name)
-		fmt.Fprintf(buf, "\t\tArgType: types.ArgType%s,\n", oneup(k.ArgType))
+		fmt.Fprintf(buf, "\t\tArgType: schema.ArgType%s,\n", oneup(k.ArgType))
 		fmt.Fprintf(buf, "\t\tValidate: %s,\n", validateFunction(k, keywords.Prefix))
 		fmt.Fprintf(buf, "\t\tGenerated: false,\n")
 		fmt.Fprintln(buf, "\t}")

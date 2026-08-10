@@ -9,7 +9,7 @@ import (
 	"net/mail"
 	"strings"
 
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 // emailFormat requires a valid email address.

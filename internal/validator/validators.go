@@ -9,7 +9,7 @@ package validator
 import (
 	"fmt"
 
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 // ArgTypeBool converts a validator function that accepts

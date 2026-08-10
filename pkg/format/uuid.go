@@ -7,7 +7,7 @@ package format
 import (
 	"fmt"
 
-	"github.com/altshiftab/jsonschema/pkg/types/schema"
+	"github.com/altshiftab/jsonschema/pkg/schema"
 )
 
 // uuidFormat requires a valid URI.
