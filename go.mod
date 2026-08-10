@@ -1,3 +1,5 @@
+// Deprecated: this module has moved into github.com/Motmedel/utils_go
+// as the package github.com/Motmedel/utils_go/pkg/json/schema.
 module github.com/altshiftab/jsonschema
 
 go 1.26
